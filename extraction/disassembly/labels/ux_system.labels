@@ -1,0 +1,598 @@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@
+@@@ UX system research / wip
+
+function 8BA65B 8BA7AD UX_draw_202_results_units
+function 8BA9AD 8BAC16 UX_draw_203_results_units_numbers
+
+function 8ACDC4 8ACE59 UX_draw_1xx_terrain_info
+function 8ACF41 8ACFAB UX_draw_1xx_terrain_info_add_oam
+
+
+@ TODO
+@ Investigate TXT_unknown_102_rabbithole (87AF77)
+@ Investigate $0F65, $0F6C
+
+@ IFUNC_87C7C7       Called when initializing most menues (except game_cfg)
+@  - Auto0477
+@    - Auto0469      Access 0F65, 0F6C structs, build menu?
+
+; Y = $0525,x (=struct pointer fetched from task variable)
+; struct+12 -> $0F65
+function 87B3BA 87B3DF Auto0477
+
+; Parameters
+;   A        W ?
+;   $0F65    L Pointer
+;
+; Byte ($0F65),2 += 9 + (($0F65),2 * 2)
+function 87ADA9 87AE86 Auto0469
+
+
+; Parameters
+;   A        W ?
+;   $0F31    L Pointer
+; Result
+;   Parameters for UX_SYS_copy_struct
+;   A        W Len
+;   $2F      L Source ptr
+;   $44      L Destination ptr
+;
+;   ($0F31),1 += A + #6
+function 82EEB9 82EF4C UX_SYS_get_copy_struct_params
+function 82F181 82F192 __UX_SYS_get_copy_struct_params_sub1
+function 82F193 82F1C4 __UX_SYS_get_copy_struct_params_sub2
+
+
+# Init some UX related memory ($0F17-$0F36 = #0, $0F37 = #$0010)
+function 82E469 82E482 UX_SYS_init_mem
+
+; Parameters
+;   $2F      L Ptr
+; Result
+;   Ptr copied to $0F31
+;   If ($0F1C) == 0: #$00 -> (Ptr),0  ($0F37) -> (Ptr),5
+;              else: #$80 -> (Ptr),0     #$00 -> (Ptr),5
+;   A + ($0F31) -> (Ptr),1
+;   A - #$8     -> (Ptr),3
+;   ?           -> (Ptr),6
+# Initialize $0F31 based on $2F and A
+function 82ED4A 82EDC0 UX_SYS_init_ptr0F31
+
+
+; If (Y+5) != 0: Call UX_SYS_get_copy_struct_params + misc ptr action
+; (Current capture is always without side effects)
+function 82F2A4 82F314 UX_SYS_conditional_get_copy_struct_params
+
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+@ boxdef_struct (size: 15)
+@ size: 15
+@ current instance ptr: $0F51
+@ members:
+@   0  - used for calculated properties / temporaries?
+@   6  L boxdim_struct pointer
+@   9  B box style (valid values: #$00-#$0C, bit 7 = box uses calculated dimensions?)
+@  10  B x-offset
+@  11  B y-offset
+@  12  L ?
+
+@ boxdef_struct, first box (one line):
+@   source        = 87E5A4
+@   dest          = 7F15F9
+@   length        = 000F
+@   data          = 000000000000 9BE587 84 0807 5057C7
+
+@ boxdef_struct, second box (header, ruler, 3x lines)
+@   source        = 87E67C
+@   dest          = 7F15F9
+@   length        = 000F
+@   data          = 000000000000 73E687 90 0805 5057C7
+
+
+@ boxdim_struct
+@ size: 9
+@ active instance ptr: $0F54
+@ members:
+@   0  B width
+@   1  B height
+@   2  L tilemap_buffer_ptr
+@   5  B ?
+@   6  L box_buffer_ptr
+@
+
+@ boxdim_struct, first box:
+@   source        = 87E59B
+@   dest          = 7F15EA
+@   length        = 0009
+@   data          = 0800F8E27E0000AC7F
+@
+@ boxdim_struct, second box (header, ruler, 3x lines)
+@   source        = 87E673
+@   dest          = 7F15EA
+@   length        = 0009
+@   data          = 140BF8E27E0000AC7F
+
+@ Sometimes dimensions are altered depending on contents to be drawn.
+@ For example, the main in-game menu has its base struct located in ROM at 87CA4D:
+@
+@ TXT_UTIL_copy_struct:
+@   source        = 87CA4D
+@   dest          = 7F15C6
+@   length        = 0009
+@   data          = 0600F8E27E0000AC7F
+@
+@ It's dimensions are then massaged through some incantations at 87CAA6
+
+
+; ($0FAD + $0FB1) << 4 -> $0B
+; ($0FAF + $0FB3) << 4 -> $0D
+; SYS_LIB_add_0B_exp0D -> A
+function 8AB60C 8AB630 UX_SYS_unknown_calc
+
+
+function 87B594 87B5DB TXT_unknown_101
+label 87B59B trap_if_zero
+# Some sort of div/sub loop
+function 80B0A9 80B0D5 _TXT_unknown_101__divish_5D_to_57
+# Some sort of mul/add loop
+function 80AFC1 80AFE4 _TXT_unknown_101__mulish_59_to_5D
+
+
+
+# Draw box background/border?
+function 8A8000 8A8018 TXT_unknown_102_0001
+
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@
+@@@ UX system low level functions
+
+@ WIP
+
+
+; Copy box/test based on struct in $0F51 to tilemap buffer
+# Copy box/test based on struct in $0F51 to tilemap buffer
+function 878576 8785CE UX_SYS_boxdef_struct_copy_boxbuf_to_mapbuf
+
+; Set boxdim_struct pointer and copy dimensions to A
+; Do some comparisons between ($0F51)+10, $0F4D, $0F4F and #$21
+; Results in $23 and $25
+; Compare box heights, results in $23 and $25
+function 8781EF 878228 UX_SYS_boxdef_struct_compare_heights
+
+; Copy box/text buffer to tilemap buffer
+; Calculates offset with a bunch of overflow checks
+;
+; Bail out if bit 15 of ($0F51)+10 (word) i set (or is it bit 7 of ($0F51)+11 (byte)?)
+; ($0F51)+10 -> $1F
+; ($0F51)+10 + boxdim_struct.height -> $21
+; Bail out if $1F > $25
+; Bail out if $21 < $23                          (what's in $23?)
+; Bail out if boxdim_struct.box_buffer_ptr == 0
+; Bail out if ($0F51)+10 (byte) > #$20           (max x-pos?)
+; Bail out if ($0F51)+11 (byte) > #$20           (max y-pos?)
+; ((($0F51)+11 * 5) + ($0F51)+10) * 2 -> X       (map offset!)
+# Copy box/text buffer to tilemap buffer with calculated offset
+function 8785CF 878647 UX_SYS_copy_boxbuf_to_mapbuf_CALC
+
+# ($0F51)+10 -> $1F, ($0F51)+10 + boxdim_struct.height -> $21
+function 8784AC 8784C5 UX_SYS_boxdef_struct_add_boxheight
+
+
+; Copy box/test based on struct in $0F51 to tilemap buffer
+; Draw borders
+# Copy box/test tilemap buffer, draw borders
+function 87B7E6 87B7F8 UX_SYS_copy_buffer_and_draw_border
+
+
+# A -> *Word ($0F51)
+function 87872F 878749 movw_A_to_ptr0F51
+
+# *Byte ($0F51)+#$9 -> A
+function 8786CB 8786E6 movb_ptr0F51i9_to_A
+
+# *Byte ($0F51)+#$9 -> A, b7 -> carry
+function 878706 878715 movb_A_to_ptr0F51i9_movb7_to_C
+
+; Move word from ($0F51)+10 to A
+# Move word from ($0F51)+10 to A
+function 878716 87872E movw_ptr0F51i10_to_A
+
+
+# Copy value in struct+6 (as pointed to by 0625/0645) to $0F54 (usually a destination pointer)
+function 87BB71 87BB79 TASKUTIL_mov_struct_v6_to_0F54
+
+# Copy value in struct+6 (as pointed to by 0625/0645) to $0F54 (usually a destination pointer)
+function 87C7DC 87C7DF TASKUTIL_mov_struct_v6_to_0F54_dup
+
+
+
+
+; Clear $0F3A-0F64, REG_BG3SC & #FC -> 0F39, #7EE2F8 -> $0F3B, #000020 -> $0F4D
+# Init UX_SYS memory area
+function 878000 878034 UX_SYS_init
+
+
+; Copy struct
+; Parameters
+;   X        W Source pointer offset (usually #$2F)
+;   $44      L Destination pointer
+;   A        W Length
+# Copy struct (X: src ptr offset, $44: dest ptr, A: len)
+function 82EF64 82EF8D UX_SYS_copy_struct
+
+; Copy box/text buffer to tilemap buffer
+; Parameters
+;   X        W Destination offset
+;   $0F61    W Skip value
+;   $0F54    L boxdim_struct pointer
+# Copy box/text buffer to tilemap buffer
+function 878BD2 878C60 UX_SYS_copy_boxbuf_to_mapbuf
+
+
+; Set boxdim_struct pointer
+;
+; Move pointer ($0F51)+#$6 to $0F54
+# Move pointer ($0F51)+#$6 to $0F54
+function 87885C 87887F UX_SYS_set_boxdim_struct_ptr
+
+; Clear box/text buffer
+; Parameters
+;   $0F61    W Clear character (xor:ed by #$2000)
+;   $0F54    L boxdim_struct pointer
+# Clear box/text buffer (clear word in $0F61, xor:ed by #$2000)
+function 878D8A 878D91 UX_SYS_memset_boxbuf_0F61xor
+
+; Clear box/text buffer
+; Parameters
+;   $0F5F    W Clear character
+;   $0F54    L boxdim_struct pointer
+# Clear text buffer (clear word in $0F5F)
+function 878D92 878D94 UX_SYS_memset_boxbuf_0F5F
+
+; Clear box/text buffer
+; Parameters
+;   A        W Clear character
+;   $0F54    L boxdim_struct pointer
+# Clear text buffer (clear word in A)
+function 878D95 878DF0 UX_SYS_memset_boxbuf
+
+# Set boxdim_struct pointer and initialize buffer
+function 8789A7 8789AF UX_SYS_set_boxdim_struct_and_memset_0F61xor
+
+# Set boxdim_struct pointer and initialize buffer
+function 8789B0 8789B8 UX_SYS_set_boxdim_struct_and_memset_0F5F
+
+
+; Set boxdim_struct pointer and copy dimensions to A
+;
+; Move pointer from ($0F51)+6 to $0F54
+; Move word ($0F54)+0 to A (ie. box_ptr->width,height)
+# Set boxdim_struct pointer and copy dimensions to A
+function 878820 87883C UX_SYS_set_boxdim_struct_and_getsize
+
+; Set boxdim_struct pointer and copy dimensions to A,
+; with #1 subtracted from dimensions if ($0F51)+9 has bit 7 set
+# Set boxdim_struct pointer and copy dimensions to A (-1 if condition)
+function 87BB89 87BB97 UX_SYS_set_boxdim_struct_and_getsize_COND_sub_1
+
+; Set current boxdim_struct dimensions
+; Parameters
+;   A(L)     B Width
+;   A(H)     B Height
+# Set current boxdim_struct dimensions from A
+function 878D36 878D50 UX_SYS_boxdim_struct_setsize
+
+; Set boxdim_struct pointer and set its dimensions from A
+;
+; Move pointer from ($0F51)+6 to $0F54
+; Move A to ($0F54)+0 (ie. box_ptr->width,height)
+# Set boxdim_struct pointer and set its dimensions from A
+function 87883D 87885B UX_SYS_set_boxdim_struct_and_setsize
+
+; Set boxdim_struct pointer and set its dimensions from A,
+; with #1 added to dimensions if ($0F51)+9 has bit 7 set
+# Set boxdim_struct pointer and set its dimensions from A (+1 if condition)
+function 87BB7A 87BB88 UX_SYS_set_boxdim_struct_and_setsize_COND_add_1
+
+
+; Null check boxdim_struct
+# boxdim_struct.box_buffer_ptr == 0 -> carry
+function 878648 87866B UX_SYS_boxdim_struct_nullcheck_bufptr
+
+
+
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@
+@@@ ux border drawing
+
+function 87B8F6 87B984 UX_BOX_draw
+
+function 87B985 87BA29 UX_BOX_draw_tcall
+function 8A8051 8A8051 UX_BOX_draw_tcall_NOP
+
+function 87BA5D 87BA66 UX_BOX_draw_tcall_plain_0400_86B382
+function 87BA67 87BA70 UX_BOX_draw_tcall_plain_0400_86B42C
+function 87BA71 87BA7A UX_BOX_draw_tcall_plain_1C00_86B50E
+function 87BA7B 87BA93 UX_BOX_draw_tcall_plain_pre
+function 87FD2F 87FD43 UX_BOX_draw_tcall_plain_0400_86B382_setup
+function 87FD44 87FD58 UX_BOX_draw_tcall_plain_0400_86B42C_setup
+function 87FD59 87FD6D UX_BOX_draw_tcall_plain_1C00_86B50E_setup
+function 87BA9D 87BAAA UX_BOX_draw_tcall_plain_do
+
+function 8A8030 8A8040 UX_BOX_draw_tcall_bordered_2400_1
+function 8A8041 8A8047 UX_BOX_draw_tcall_bordered_2C00
+function 8A8052 8A8062 UX_BOX_draw_tcall_bordered_2400_2
+
+function 8A8063 8A8066 UX_BOX_draw_tcall_bordered_1000
+function 8A8068 8A806B UX_BOX_draw_tcall_bordered_1400
+function 8A806D 8A8070 UX_BOX_draw_tcall_bordered_1800
+function 8A8072 8A8075 UX_BOX_draw_tcall_bordered_1C00
+function 8A8077 8A8089 UX_BOX_draw_tcall_bordered_0C00
+
+function 8A808A 8A808E UX_BOX_draw_tcall_bordered_with_header_1
+function 8AC315 8AC38D UX_BOX_draw_tcall_bordered_with_header_1_do
+function 8AC42C 8AC450 UX_BOX_draw_tcall_bordered_with_header_1_do_draw
+
+function 8A8094 8A8098 UX_BOX_draw_tcall_bordered_with_header_2
+function 8ACD48 8ACD9F UX_BOX_draw_tcall_bordered_with_header_2_do
+
+function 8A8099 8A80BF UX_BOX_draw_tcall_E
+
+function 8A8022 8A802F UX_BOX_draw_tcall_copy
+
+function 8A82B0 8A82CC UX_BOX_draw_bg_and_border
+
+function 878DF1 878EF1 UX_BOX_draw_bg
+
+; UX_BOX_draw_border
+; Parameters
+;   $2F      L Pointer to parameters:
+;                ($2f)+0 B ? (<< 1 and stored to $19)
+;                ($2f)+1 B ? (<< 1 and stored to $1b)
+;                ($2f)+2 W ? UL corner tile #
+;                ($2f)+4 W ? UR corner tile #
+;                ($2f)+6 W ? BL corner tile #
+;                ($2f)+8 W ? BR corner tile #
+;   $0F54    L Pointer to parameters:
+;                ($0f54)+6 L Destination pointer
+;                ($0f54)+0 B Width
+;                ($0f54)+1 B Height
+;
+; 8a82ef: description data for border tiles
+function 879476 879649 UX_BOX_draw_border
+
+
+; UX_BOX_draw_alt
+; For example used for drawing the border around the terrain info overlay
+; Called when drawing the in-game menu and the first few menues as well, but
+; when short-circuiting the routine the screens look fine anyway...
+;
+; Parameters
+;   $2F      L Pointer to border char id array (length #$18)
+;   $0F5D    W Tile attribute
+;   $0F54    L Pointer to parameters:
+;                ($0f54)+6 L Destination pointer
+;                ($0f54)+0 B Width
+;                ($0f54)+1 B Height
+# UX_BOX_draw_alt
+function 879015 8791AC UX_BOX_draw_alt
+; Copy #$0C words from ($2F) to $0D-$26, added by ($0F5D)
+label 87902F copy_loop
+
+
+# UX_BOX_draw_alt_cond_b8A8363_a0000
+function 8A8326 8A8350 UX_BOX_draw_alt_cond_b8A8363_a0000
+# UX_BOX_draw_alt - $0F5D=0000 $2F=8A8363
+function 8A8351 8A8362 UX_BOX_draw_alt_b8A8363_a0000
+# UX_BOX_draw_alt - $0F5D=1000 $2F=8A8392
+function 8A837D 8A8391 UX_BOX_draw_alt_b8A8392_a1000
+
+
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@
+@@@ ux system menu setup
+
+; UX_MENU_add_item
+; Investigate parameters!
+function 87C7BC 87C7C6 UX_MENU_add_item
+
+
+@ First call
+@ $0F31 = $7F1200  ->  a00816000400000080c1030000000000
+@
+@
+
+; Configure plotting of menu item
+function 87AEE8 87AF56 UX_MENU_config_item
+
+; Increment menu item counter counter
+; And some other shenanigans...
+; Result in $0F1C-0F23 and A based on ($0F28)
+# Increment menu item counter counter
+function 82E4D2 82E4E3 UX_MENU_config_item_INC_counter
+function 82E5CB 82E66D _UX_MENU_config_item_INC_counter_s1
+
+
+function 87AF95 87B041 UX_menu_dodo
+
+# UX_MENU_action
+function 87B05D 87B077 UX_MENU_action
+# UX_MENU_action_exec
+function 80B7EE 80B823 UX_MENU_action_exec
+
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@
+@@@ ux system higher level functions
+
+; TXT_print_strings
+; ...
+function 87B538 87B593 UX_TXT_print_strings
+comment 87B546 "#$2800 or #$2000 -> $0F5D, depending on 87:06E5+X == 0"
+comment 87B54D "Indexing into bank 87 by X"
+
+
+function 87D739 87D798 UX_TXT_print_strings_unknown_1
+
+function 87CD6E 87CDD7 UX_TXT_print_strings_unknown_2
+
+
+@ map infobox
+function 87BC8C 87BD21 UX_draw_map_infobox
+function 8A8735 8A8794 UX_draw_map_infobox_terrain
+function 8BC500 8BC514 UX_draw_map_infobox_terrain_getstrptr
+function 8A852B 8A8625 UX_draw_map_infobox_unit
+
+
+# Set $32 to #$8AB292 and call TXT_Set2F_32+0B
+function 8AB23E 8AB24E TXT_set_2F_via_8AB292+0B
+# Set $32 to #$8AB29B and call TXT_Set2F_32+0B
+function 8AB24F 8AB263 TXT_set_2F_via_8AB29B+0B
+# Set $32 to #$8AB2A4 and call TXT_Set2F_32+0B
+function 8AB268 8AB278 TXT_set_2F_via_8AB2A4+0B
+
+# Set $2F: ($32)+A<<1+$0B -> $2F
+function 8AB279 8AB291 TXT_set_2F_32+0B
+
+# Set X to 0-2 depending on value in $7E4002
+function 8AB2AD 8AB2C3 TXT_set_X_7E4002
+
+# Set $0F4D to #$000020
+function 8781E2 8781EE TXT_set_0F4D_000020
+
+
+; Get string pointer for CO name -> $2F
+; Parameters
+;   A        B Officer number
+# Get string pointer for CO name -> $2F
+function 8AB722 8AB73A UX_UTIL_get_co_strptr
+
+
+
+function 82EF4D 82EF63 TXT_TMP_called_per_string_1
+function 82F1CB 82F241 TXT_TMP_called_per_string_1_s1
+function 82F242 82F2A3 TXT_TMP_called_per_string_1_s2
+
+
+# Investigate!
+function 87B174 87B19C WIP_unknown1
+
+# Note: $0008,y -> $2F
+function 87B0B5 87B0D6 WIP_unknown2
+
+
+# $7EA34A: 0 written before drawing first menu
+data 7EA34A 7EA34A STATE_unknown1
+
+
+function 87F14D 87F1B8 TXT_unknown_A
+
+
+# Another rabbit hole!
+function 87AF77 87AF94 TXT_unknown_102_rabbithole
+function 82E839 82E873 TXT_unknown_102_rh_1
+function 82EA44 82EAC8 TXT_unknown_102_rh_2
+function 82E970 82E9BE TXT_unknown_102_rh_2_Leaf
+
+function 82E9BF 82EA43 TXT_unknown_102_0000
+
+
+function 878158 8781AA TXT_unknown_103
+function 878D51 878D74 TXT_unknown_103_2
+function 878880 8788E3 TXT_unknown_103_3
+function 87804F 8780A3 TXT_unknown_103_4
+function 878104 878157 TXT_unknown_103_4_1
+function 878D75 878D89 TXT_unknown_201
+
+
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@
+@@@ UX application code
+@@@ most menu system text printing is carried out from these
+
+; VTASK_UX_draw
+; Perform various drawing tasks depending on value in $0F51
+;   Function pointer for draw function fetched with VTASK_UX_draw_switch
+function 87B19D 87B1B2 VTASK_UX_draw
+
+; Access struct at ($0F51), set bits in $0F44
+;   if W:($0F51)+1 != 0
+;     Path not taken: moves L:$0F51+0 to $32 and calls 878A13
+;   if W:($0F51)+4 != 0
+;     Path not taken: moves L:$0F51+3 to $32 and calls 878A72 (SUB_VTASK_COND_UNPAK_01)
+;     if Carry = 1
+;       W:$0F44 = A = W:$0F44 | #$0020, Carry = 1
+;       return
+;   B:$0F44 = A = B:$0F44 & #$DF, Carry = 0
+;   return
+# Access struct at ($0F51), taken path with W:($0F51)+1 == 0 and W:($0F51)+4 == 0 clears carry and b5 of $0F44
+function 87866C 8786CA VTASK_UX_draw_switch
+comment 87868E "Path not taken with current capture (Not accessed from elsewhere either)"
+comment 8786A2 "Path not taken with current capture (DATA_XFER_Unknown4)"
+
+# Path not taken with current capture
+function 878A13 878A23 UX_unknown_0012_s1
+
+function 87E5BF 87E628 UX_draw_00_first_menu
+label 87E5DA items_loop
+label 87E5F0 items_next
+comment 87E5F9 "items_done"
+
+function 87E54D 87E551 UX_draw_00_first_menu_sub1_sram
+function 87E552 87E553 UX_draw_00_first_menu_sub2_sec
+function 87E554 87E558 UX_draw_00_first_menu_sub3_sram
+function 87E559 87E55D UX_draw_00_first_menu_sub4_sram
+
+
+function 87E697 87E6C9 UX_draw_01_load
+function 87EE33 87EE65 UX_draw_10_game_mode
+function 87E313 87E344 UX_draw_20_game_cfg_options
+function 87DD87 87DDE3 UX_draw_21_game_cfg_co_window
+function 87D799 87D7FB UX_draw_22_game_cfg_options_window
+function 87C519 87C551 UX_draw_26_game_cfg_co_profile_callout
+function 87C6C4 87C700 UX_draw_27_game_cfg_help_callout
+function 87F909 87F998 UX_draw_40_map_select_1
+function 87F9BB 87FA80 UX_draw_41_map_select_2
+function 87FA95 87FB71 UX_draw_42_map_select_3
+function 8789E1 8789EB UX_draw_4X_map_select_number
+function 87BBCA 87BC46 VTASK_UX_draw_50_game_screen
+function 87BFDC 87C00F UX_draw_51_terrain_info
+
+function 87CA71 87CADB VTASK_UX_draw_61_game_menu
+function 87C9B8 87C9D5 VTASK_UX_draw_61_game_menu_addcall_00
+function 87C9D6 87C9D7 VTASK_UX_draw_61_game_menu_addcall_01_clc
+function 87C9D8 87C9D9 VTASK_UX_draw_61_game_menu_addcall_02_sec
+function 87C9DA 87C9DB VTASK_UX_draw_61_game_menu_addcall_03_clc
+function 87C9DC 87C9DD VTASK_UX_draw_61_game_menu_addcall_04_sec
+function 87C9DE 87C9F8 VTASK_UX_draw_61_game_menu_addcall_05
+function 87C9F9 87C9FA VTASK_UX_draw_61_game_menu_addcall_06_sec
+function 87C9FB 87C9FC VTASK_UX_draw_61_game_menu_addcall_07_sec
+function 87C9FD 87C9FE VTASK_UX_draw_61_game_menu_addcall_08_sec
+function 87C9FF 87CA00 VTASK_UX_draw_61_game_menu_addcall_09_sec
+function 87CA01 87CA12 VTASK_UX_draw_61_game_menu_addcall_10
+function 87CA13 87CA14 VTASK_UX_draw_61_game_menu_addcall_11_sec
+
+@ Auto0525 pointed to by one of the interleaved value in call table
+
+
+function 87D568 87D618 UX_draw_52_build_unit
+
+function 87BD69 87BDA0 UX_draw_XX_unknown_1
+function 87C440 87C446 UX_draw_XX_unknown_2
+function 87D221 87D23A UX_draw_XX_unknown_3
+function 87F659 87F694 UX_draw_XX_unknown_4
+function 87F710 87F71F UX_draw_XX_unknown_5
+function 87F770 87F77D UX_draw_XX_unknown_6
+
+function 8B87B9 8B8863 UX_draw_90_unitinfo
+
+function 91844D 9184EC UX_draw_80_help_page_toc
+function 918529 91856A UX_draw_80_help_page_text
+function 91972A 91973D __UX_draw_80_help_page_text__get_title_strptr

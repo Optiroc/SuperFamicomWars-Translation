@@ -1,0 +1,81 @@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@
+@@@ work in progress
+
+# Iterate "slow" in-game tasklist (carries out work between turns and other low frequency triggers)
+function 81808D 818189 GAME_SLOWTASK_iterate
+
+# Execute "frame" in-game tasks (1 or 2 tasks depending on $08DC,x)
+function 81820B 818238 GAME_FRAMETASK_exec
+label 81821D exec_task_2
+function 818239 818247 GAME_FRAMETASK_exec_task_1
+
+@ task1 list
+@ Unknown1270
+@ Auto0022
+@ Auto0023
+@ Unknown1275
+@ Auto0024
+@ Auto0025
+@ Auto0026
+@ Auto0027
+@ Auto0028
+@ Auto0029
+@ Auto0030
+@ Unknown1278
+
+@ task2 list
+@ Auto0057
+@ _Auto0057_81C30E
+@ Auto0067
+@ _Auto0067_81C8BF
+@ Auto0425
+@ Auto0684
+@ Auto0692
+@ Auto0724
+@ Auto0732
+@ Unknown1410
+@ Unknown1411
+@ Auto0860
+@ Auto0865
+@ Auto0867
+@ Auto0869
+@ Auto0943
+@ Auto0945
+@ Unknown1354
+@ Unknown1355
+@ Unknown1349
+@ Unknown1351
+@ GAME_TASK_NOP1
+@ GAME_TASK_NOP2
+@ Auto0979
+@ Auto0981
+@ Auto0983
+@ Auto0990
+
+@ task 1/2 nops
+function 8E90FF 8E90FF GAME_TASK_NOP1
+function 8E913C 8E913C GAME_TASK_NOP2
+function 8C8006 8C8006 GAME_TASK_NOP3
+function 89A1F4 89A1F4 GAME_TASK_NOP4
+
+
+
+# Unpack sprites and update misc related pointers?
+function 8998E4 899A9C DATA_update_sprites
+label 899A95 done_clc
+label 899A99 done_sec
+
+# Get destination for memcpy, A -> A (8-bit indices, table at 89AE16)
+function 89AE03 89AE15 _DATA_update_sprites_get_dest
+
+# Get index for something, A -> Y (8-bit indices, double indirection 7EC2B0 -> 89AE39)
+function 89AE1B 89AE38 _DATA_update_sprites_get_what
+
+# Get source pointer for data (usually an LZN stream) in 2F, based on some gnarly indirection
+function 89AE3E 89AE70 DATA_set_2F_srcptr
+function 89AE71 89AEAF DATA_set_2F_srcptr_s1
+
+
+function 8A8B7A 8A8BB6 VRAM_fill_tiles_9AC0
+

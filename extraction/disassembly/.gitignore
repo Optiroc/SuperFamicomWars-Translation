@@ -1,0 +1,5 @@
+*.trace
+*.emulation_cache
+sfw.asm
+sfw_report.txt
+bin/*

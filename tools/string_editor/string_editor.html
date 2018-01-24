@@ -1,0 +1,297 @@
+<html>
+<head>
+<meta charset='utf-8'>
+<style type = 'text/css'>
+  body {
+    margin: 8px;
+  }
+  div.col {
+    display: inline-block;
+    vertical-align: top;
+  }
+  div.spacer {
+    height: 6px;
+  }
+  div,p,span,textarea {
+    font-family:'SF Mono','Menlo','Liberation Mono','Lucida Console','Consolas','Lucida Sans Typewriter','Courier New';
+    font-size: 10px;
+    line-height: 13px;
+  }
+  p,span,textarea {
+    margin: 0;
+    white-space: pre-wrap;
+  }
+  textarea {
+    padding: 4px;
+    resize: none;
+    border: 1px solid black;
+    background-color: transparent;
+    resize: none;
+    outline: none;
+  }
+  textarea.edit {
+  }
+  textarea.display {
+    resize: none;
+    overflow: hidden;
+    border: 1px solid transparent;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  textarea.line_lengths {
+    width: 40px;
+  }
+  textarea.line_numbers {
+    width: 30px;
+  }
+  canvas {
+    image-rendering: pixelated;
+    border: 4px solid #782d2d;
+    background-color: #782d2d;
+  }
+  canvas.line {
+    border: 4px solid white;
+    background-color: white;
+  }
+  canvas.canvas_2x {
+    zoom: 2;
+  }
+</style>
+<title>MB-SFWE // String Editor</title>
+</head>
+<body>
+
+<div>
+  <div class="col">
+    <p>Pixels</p>
+    <textarea readonly name="textarea" class="line_lengths display" id="line_lengths" rows="20" cols="2"></textarea>
+  </div>
+  <div class="col">
+    <p>Line</p>
+    <textarea readonly name="textarea" class="line_numbers display" id="line_numbers" rows="20" cols="1"></textarea>
+  </div>
+  <div class="col">
+    <p>Text</p>
+    <textarea name="textarea" class="edit" id="textarea_edit" rows="20" cols="70"></textarea>
+  </div>
+  <div class="col">
+<p> Special characters
+
+ '[' = Opening quote
+ ']' = Closing quote
+ '$' = Heart
+ '|' = Short space
+ '<' = 1 pixel space
+ '_' = 8px tab
+</p>
+  </div>
+</div>
+
+<div class="spacer"></div>
+
+<div>
+  <div class="col">
+    <p>&nbsp;</p>
+    <canvas id="line_canvas" class="canvas line" width="65" height="32"></canvas>
+  </div>
+  <div class="col">
+    <p>Preview</p>
+    <canvas id="text_canvas" class="canvas_2x" width="0" height="16"></canvas>
+  </div>
+</div>
+
+</body>
+<script type='text/javascript'>
+
+  String.prototype.replaceAll = function(search, replacement) {
+      var target = this;
+      return target.split(search).join(replacement);
+  };
+
+  var edit_field, lengths_field, linenumbers_field, text_canvas, line_canvas;
+
+  const bg_color = "#782d2d";
+
+  const vwf_widths = [
+    3, 6, 7, 6, 8, 8, 8, 3, 4, 4, 6, 6, 5, 4, 4, 8, 6, 4, 6, 6, 7, 6, 6, 6, 6, 6, 3, 3, 1, 6, 6, 6,
+    8, 8, 7, 7, 7, 6, 6, 7, 7, 2, 7, 7, 6, 8, 7, 7, 7, 7, 7, 7, 8, 7, 8, 8, 8, 8, 7, 7, 5, 7, 6, 4,
+    6, 5, 5, 5, 5, 5, 5, 5, 5, 2, 3, 5, 2, 6, 5, 5, 5, 5, 4, 5, 4, 5, 6, 6, 6, 5, 6, 8, 2, 8, 8
+  ];
+
+  const pairs = {
+    "AT":2,
+    "FA":1,
+    "Fa":1,
+    "Fi":1,
+    "Fj":1,
+    "Fo":1,
+    "Fr":1,
+    "Fu":1,
+    "Lt":1,
+    "Ta":2,
+    "Te":2,
+    "Ti":1,
+    "Tj":1,
+    "To":2,
+    "Tr":2,
+    "Ts":2,
+    "Tu":2,
+    "Tw":2,
+    "Ty":2,
+    "T-":2,
+    "T!":1,
+    "Va":1,
+    "Vo":1,
+    "Ya":1,
+    "Ye":1,
+    "Yo":1,
+    "Yu":1,
+    "bj":1,
+    "dj":1,
+    "fa":1,
+    "fe":1,
+    "ff":1,
+    "fo":1,
+    "fr":1,
+    "fs":1,
+    "ft":1,
+    "fu":1,
+    "nj":1,
+    "oj":1,
+    "ra":1,
+    "rf":1,
+    "rt":1,
+    "r,":1,
+    "uj":1,
+    " T":1,
+    " j":1,
+    "-T":2,
+    "k]":1,
+    "p]":1,
+    "t]":1,
+    "y]":1,
+    "n'":1,
+    "e'":1,
+    "s'":1,
+    "u'":1,
+    "'m":1,
+    "'r":1,
+    "'s":2,
+    "'t":1,
+    "'y":1,
+    ">V":2,
+    ">T":2,
+    ">Y":2,
+    "f`":1,
+    "f`":1,
+    "r!":1,
+    "!!":1
+  };
+
+  const font_image = new Image();
+  font_image.src = "vwf_font.png";
+
+  function preprocess_string(s) {
+    s = s.replaceAll("  ", ">");
+    s = s.replaceAll("fi", "`");
+    s = s.replaceAll("fl", "^");
+    return s;
+  }
+
+  function render_text(text, width, height) {
+    const canvas = text_canvas;
+    canvas.width = width;
+    canvas.height = height;
+    var ctx = canvas.getContext("2d");
+
+    const l_canvas = line_canvas;
+    l_canvas.height = height * 2;
+    var lctx = l_canvas.getContext("2d");
+    lctx.font = "16px 'SF Mono','Menlo','Liberation Mono','Lucida Console','Consolas','Lucida Sans Typewriter','Courier New'";
+    lctx.textAlign = "right";
+    lctx.fillStyle = "#000";
+
+    lines = text.split('\n');
+    var y = 0;
+    lines.forEach(function(s, line_number) {
+      str = preprocess_string(s);
+      const y = line_number * 16;
+      var x = 0;
+      lctx.fillText("" + (line_number + 1), 54, 2 * y + 29);
+
+      for (var i = 0; i < str.length; ++i) {
+        chr = str.charCodeAt(i) - 0x20;
+        if (chr == 0x3f) {
+          // Short tab ("_")
+          x += 8 - (x % 8);
+        } else {
+          // Render normal character
+          ctx.drawImage(font_image, chr * 8, 0, 8, 16, x, y, 8, 16);
+
+          if (chr < vwf_widths.length) {
+            x += vwf_widths[chr];
+          }
+          if (i < str.length - 1) {
+            var pair = str[i] + str[i+1];
+            if (pair in pairs) {
+              x -= pairs[pair];
+            }
+          }
+        }
+      }
+    });
+  }
+
+  function vwf_strlen(str) {
+    var width = 0;
+    str = preprocess_string(str);
+    for (var i = 0; i < str.length; ++i) {
+      chr = str.charCodeAt(i) - 0x20;
+
+      if (chr == 0x3f) {
+        // Short tab ("_")
+        width += 8 - (width % 8);
+      } else {
+        // Normal character
+        if (chr < vwf_widths.length) {
+          width += vwf_widths[chr];
+        }
+        if (i < str.length - 1) {
+          var pair = str[i] + str[i+1];
+          if (pair in pairs) {
+            width -= pairs[pair];
+          }
+        }
+      }
+    }
+    return width;
+  }
+
+  function textChanged(ev) {
+    lengths_field.value = linenumbers_field.value = "";
+    lines = ev.target.value.split('\n');
+    max_length = 0;
+    lines.forEach(function(line, index) {
+      length = vwf_strlen(line);
+      if (length > max_length) max_length = length;
+      lengths_field.value += length + "\n";
+      linenumbers_field.value += (index + 1) + "\n";
+    });
+    render_text(ev.target.value, max_length, lines.length * 16);
+  }
+
+  document.addEventListener('DOMContentLoaded',function() {
+    edit_field = document.getElementById("textarea_edit");
+    lengths_field = document.getElementById("line_lengths");
+    linenumbers_field = document.getElementById("line_numbers");
+    text_canvas = document.getElementById("text_canvas");
+    line_canvas = document.getElementById("line_canvas");
+    edit_field.oninput = textChanged;
+
+    window.setInterval(function() {
+      linenumbers_field.scrollTop = lengths_field.scrollTop = edit_field.scrollTop;
+    }, 16);
+  },false);
+
+</script>
+</html>

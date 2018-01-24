@@ -1,0 +1,207 @@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@
+@@@ string printing
+
+
+; Decode 1-n strings to text buffer
+; Uses #$FFFF as linefeed token, if followed after the #$0000 terminator
+; Parameters
+;   $2F      L Pointer to first string
+;   $0F51    L Pointer to boxdef_struct
+;
+; NB! The replacement text decoder must support these lists of strings, both
+;     if the new string is shorter and longer than the original.
+;     Easy enough: Pad shorter strings with a special token up until
+;     the #$FFFF word and fast forward $2F after decoding. For longer
+;     strings using a "continuation pointer", just make sure $2F is
+;     restored when done.
+# Decode strings with linefeed
+function 8789EC 878A12 TXT_decode_strings
+
+
+; Decode 8x16 tiles to text buffer
+; Parameters
+;   $2F      L Source pointer
+;   X(L)     B X-coordinate
+;   X(H)     B Y-coordinate
+;   $0F54    L Pointer to boxdim_struct:
+;                ($0f54)+0 B Buffer width
+;                ($0f54)+6 L Destination pointer
+;   $0F5D    W Tile attribute
+;   $0F5F    W Empty character
+# Decode 8x16 characters from encoded string
+function 879E01 879F32 TXT_decode_string
+; "X = Read offset  Y = Write offset"
+label 879E70 read_bytes
+comment 879E73 "Done if read #$0000"
+comment 879E75 "Compare LSB"
+comment 879E78 "compound_char if >= #$84"
+label 879E7F get_byte
+; "Store offset for next call"
+label 879E85 done
+label 879EA0 normal_char
+label 879EF6 dictionary_char
+label 879F10 id_matched
+label 879F33 id_not_matched
+
+data 87A025 87A32A TXT_decode_string_char_id_tableA
+data 87A32B 87A92A TXT_decode_string_char_id_tableB
+data 87A92B 87AD93 TXT_decode_string_dictionary_char_table
+
+
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@
+@@@ specialized printing functions (numbers, lines, etc)
+
+; Print small stats number
+; Prints 2 characters, tile_attr ($0F5D) used as char offset
+; Different number chars are used for the low and high number,
+; with the offset added at 879A9E.
+;
+; Parameters
+;   A        W Number
+;   X(L)     B Y-offset
+;   X(H)     B X-offset
+;   $0F5D    W Tile attribute
+;   $0F54    L Pointer to boxdim_struct:
+;                ($0f54)+0 B Buffer width
+;                ($0f54)+6 L Destination pointer
+# Print small stats number
+function 879A0C 879AB0 TXT_print_small_number
+
+
+; Print small character
+;
+; Parameters
+;   A        W Tile #
+;   X(L)     B Y-offset
+;   X(H)     B X-offset
+;   $0F5D    W Tile attribute
+;   $0F54    L Pointer to boxdim_struct:
+;                ($0f54)+0 B Buffer width
+;                ($0f54)+6 L Destination pointer
+# Print small character
+function 8797D7 87983B TXT_print_small_char
+
+; Print small stat
+; Parameters
+;   A        W Number (0-99, #$FFFF prints '-')
+# Print small stat
+function 87BD22 87BD47 TXT_print_small_stat
+
+@ These function use other attributes and null/max chars
+# Print small stat (unit damage info)
+function 8A84EF 8A850C TXT_print_small_stat_unitdmg
+# Print small stat (unit move cost)
+function 8A850D 8A852A TXT_print_small_stat_movecost
+
+
+; Print 8x16 number (0-999)
+;
+; Parameters
+;   A        W Number
+;   X(L)     B Y-offset
+;   X(H)     B X-offset
+;   $0F5D    W Tile attribute
+;   $0F54    L Pointer to boxdim_struct:
+;                ($0f54)+0 B Buffer width
+;                ($0f54)+6 L Destination pointer
+# Print 8x16 number
+function 879C54 879DF5 TXT_print_number
+
+; Print 8x16 number (uint24)
+;
+; Parameters
+;   $2F      L Number
+;   X(L)     B Y-offset
+;   X(H)     B X-offset
+;   $0F5D    W Tile attribute
+;   $0F54    L Pointer to boxdim_struct:
+;                ($0f54)+0 B Buffer width
+;                ($0f54)+6 L Destination pointer
+# Print 8x16 number (uint24)
+function 87C779 87C7BB TXT_print_number_uint24
+
+# Print 8x16 number (uint24) at 7E72DD
+function 87C73F 87C749 TXT_print_number_uint24_7E72DD
+# Print 8x16 number (uint24) at 7E72DE
+function 87C74B 87C755 TXT_print_number_uint24_7E72DE
+# Print 8x16 number (uint24) at 7E72DF
+function 87C757 87C761 TXT_print_number_uint24_7E72DF
+# Print 8x16 number (uint24) at 7E72E0
+function 87C763 87C76D TXT_print_number_uint24_7E72E0
+# Print 8x16 number (uint24) at 7E72E1
+function 87C76F 87C777 TXT_print_number_uint24_7E72E1
+
+; Emit one line of 8x16 number
+;
+; Parameters
+;   A        W Tile # offset
+;   X(L)     B Y-offset
+;   X(H)     B X-offset
+;   $2F      L Source pointer
+;   $0F5D    W Tile attribute
+;   $0F54    L Pointer to boxdim_struct:
+;                ($0f54)+0 B Buffer width
+;                ($0f54)+6 L Destination pointer
+# Emit one line of 8x16 number
+function 8796E9 8797D6 TXT_print_number_uint24_emit
+
+
+; Draw horizontal line (usually in the border layer)
+;
+; Parameters
+;   X(L)     B Y-offset
+;   X(H)     B X-offset
+;   $0F54    L Pointer to boxdim_struct:
+;                ($0f54)+0 B Buffer width
+;                ($0f54)+6 L Destination pointer
+# Draw horizontal line in the border layer
+function 87983C 8798A0 TXT_draw_line
+
+
+; Copy array of plain tile indices to buffer, with added attribute word
+; (byte stream -> word stream)
+;
+; Called 3x for each selected map
+;   text layer: katakana above island name
+;   text layer: hiragana above building info (2 calls, upper and lower lines of 8x16 chars)
+; Called 2x for terrain info box
+;   border layer: horizontal lines between unit rows
+;
+; Parameters
+;   $2F      L Source pointer
+;   X(L)     B X-offset
+;   X(H)     B Y-offset
+;   $0F5D    W Tile attribute
+;   $0F54    L Pointer to boxdim_struct:
+;                ($0f54)+0 B Buffer width
+;                ($0f54)+6 L Destination pointer
+# Copy array of plain tile indices to buffer
+function 87964A 8796E8 TXT_copy_tile_array
+
+
+
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@
+@@@ support functions
+
+; Get length of string at $2F, result in A
+;   Assumes 2-bytes per characters, null-word terminator
+;   TODO: Handle our upcoming ASCII encoded strings
+# Get length of string at $2F
+function 879F4C 879F6F TXT_UTIL_string_len
+
+# Do some counting of strings...
+function 879F70 879FB3 TXT_UTIL_strings_lens
+
+
+; Convert integer at $2F to character array in ($3B)
+; Parameters
+;   $2F      L Integer value
+;   $3B      L Destination pointer
+# Convert integer at $2F to character array in ($3B)
+function 83A7E9 83A8AD TXT_UTIL_int_to_chars
+

@@ -1,0 +1,853 @@
+LZN Compression (Lempel-Ziv-Nintendo!), v.SFW (Super Famicom Wars)
+Stream format description & disassembly of 65816 decompression implementation
+Reverse engineered by David Lindecrantz <optiroc@gmail.com> (2013.01.25)
+
+
+As one of the first tasks during my complete dissection of the Japan-only
+Super Famicom title "Super Famicom Wars", I decided to tackle the data
+compression. After all, it's used at boot time to decompress the Nintendo
+logo graphic so it seemed as good place as any to start.
+
+Before long I realised that the compressed stream was a mix of many
+classic compression types; involving both RLE, sliding window and some
+more exotic (and domain specific) techniques. I also found some vague
+documentation of other Nintendo compression formats -- none that matches
+this one completely but there surely seems to be some common thread all
+the way from the NES up until quite recently. I'd love to see the smoke-
+laden office somewhere in Kyoto where all these formats and crazy code
+have originated from.
+
+Anyway, on to the description!
+
+
+;-------------------------------------------------------------------------------
+Stream format description:
+
+In Super Famicom Wars the compressed data is stored as headerless byte streams,
+and therefore, this document will only describe a raw compressed stream.
+
+The stream begins with an opcode, 1-7 bits long. Depending on the opcode, the
+following several bits are used for parameters and data. The opcode together
+with its parameters and data describes what will be written to the output stream.
+When finished with one opcode the decoder goes on to the next byte aligned
+address to decode the next. The stream is terminated with opcode #$ff.
+
+
+Opcode Reference:
+
+Opcode 00 / #$00-#$3f / %00xxxxxx [x+1 bytes]
+Straight stream copy
+Copy x+1 bytes straight from source stream
+  x = #$00-#$3f (1-64)
+
+Opcode 0100 / #$40-#$4f / %0100xxxx uv.wyyyy [x/2 bytes]
+Write x+(1|2) interleaved bytes
+Different nybble patterns depending on parameters u/v/w
+  u = Get constant nybble from parameter v or y (0 = constant y, 1 = constant v)
+  w = Byte pattern (0 = stream:constant, 1 = constant:stream)
+  If u=1 the first variable nybble is "yyyy"
+  If u=0 the first variable nybble is the most significant bits of next byte
+  Used rarely and for rather small chunks, and adds a fair amount
+  of complexity to both the encoder and the decoder. Fail!
+
+Opcode 0101 / #$50-#$5f / %0101xxxx [x+1 bytes]
+Double pump stream copy
+Copy x+1 bytes from source stream, write each byte two times
+  x = #$0-#$f (1-16)
+
+Opcode 011 / #$60-#$7f / %011wxxxx yyyyyyyy [x+1 bytes]
+Interleaved word copy
+Write x+1 interleaved words (constant byte:streamed byte, or vice versa)
+  y = Constant byte
+  w = Word pattern (0 = constant:stream, 1 = stream:constant)
+
+Opcode 10 / #$80-#$bf / %10xxxxyy yyyyyyyy
+Sliding window copy, 2-byte
+Copy x+2 bytes from offset -y in decoded buffer
+  x = #$0-#$f (2-17)
+  y = #$000-#$3ff (0-1023)
+
+Opcode 110 / #$c0-#$df / %110xxxxx xyyyyyyy yyyyyyyy
+Sliding window copy, 3-byte
+Copy x+2 bytes from offset -y in decoded buffer
+  x = #$00-#$3f (2-65)
+  y = #$0000-#$7fff (0-32767)
+
+Opcode 1110 / #$e0-#$ef / %1110xxxx xxxxxxxx yyyyyyyy
+Byte RLE, 3-byte
+Duplicate byte y x+3 times
+  x = #$000-#$fff (3-4098)
+
+Opcode 11110 / #$f0-#$f7 / %11110xxx yyyyyyyy
+Byte RLE, 2-byte
+Duplicate byte y x+3 times
+  x = #$0-#$7 (3-10)
+
+Opcode 111110 / #$f8-#$fb / %111110xx xxx.yyyy yyyyyyyy
+Rewind stream pointer, 3-byte
+Rewind to -y, decode x+3 bytes before returning
+  x = #$00-#$1f (3-34)
+  y = #$000-#$fff (0-4095)
+
+Opcode 1111110 /#$fc-#$fd / %1111110x xxyyyyyy
+Rewind stream pointer, 2-byte
+Rewind to -y, decode x+3 bytes before returning
+  x = #$0-#$7 (3-10)
+  y = #$00-#$3f (0-63)
+
+Opcode 1111111 / #$fe-#$ff / %1111111.
+End of data, return from decoder
+
+
+;-------------------------------------------------------------------------------
+Zero page usage:
+
+Initial parameters
+$00/01/02   = Source Stream Offset (24b, LL HH BB)
+            $00/01 is offset (loaded into Y and zeroed at init)
+            $02 is used as source bank pointer throughout
+$03/04      = Destination Offset (16b)
+            Loaded into X
+$05     = Destination Bank (8b)
+            Loaded into DB
+
+Usage while decoding
+$03/04      = Temporary storage
+$05     = Counter
+
+$06/07/08   = Stash for source stream offset during stream rewind
+$09     = # of instructions until stream pointer will be pulled back
+
+$0a/0b      = Not quite clear yet
+
+
+
+;-------------------------------------------------------------------------------
+;Disassembly
+
+LZNDecode:
+;Init registers and data pointers
+80BAF4                 php
+  BAF5                 phb
+  BAF6                 rep #30      ;A16X16
+  BAF8                 ldy 00       ;Stream offset at $00/01 -> Y
+  BAFA                 bmi BB0D     ;Branches if offset >= $8000 (data in ROM)
+
+  BAFC                 tya          ;If not, add #$8000 (never stream from RAM)
+  BAFD                 clc
+  BAFE                 adc #8000
+  BB01                 tay
+  BB02                 lda #8000
+  BB05                 sta 00
+  BB07                 sep #20      ;A8
+  BB09                 dec 02
+  BB0B                 bra BB11
+
+  BB0D                 stz 00       ;Zero $00/01, used for offset addressing
+  BB0F                 sep #20      ;A8
+  BB11                 stz 0A       ;Zero $0a/09
+  BB13                 stz 09
+  BB15                 lda 05       ;Load destination bank (usually $7f/$7e)
+  BB17                 pha          ;Push into DB
+  BB18                 plb
+  BB19                 ldx 03       ;Load destination offset
+  BB1B                 jmp BCB7     ;ReadOpcode (read first byte of stream)
+
+
+;-------------------------------------------------------------------------------
+TestUnwindStreamPointer:
+;Called during decoding if $09 != 00
+;Current $09 value in A when called
+
+  BB1E                 dea          ;Decrease and store $09
+  BB1F                 sta 09
+  BB21                 bne BB29     ;If != 00, continue at rewinded pointer
+UnwindStreamPointer:
+  BB23                 lda 08       ;Counter == 0, unwind pointer at $06/07/08
+  BB25                 sta 02
+  BB27                 ldy 06
+  BB29                 rts
+
+
+;-------------------------------------------------------------------------------
+BankWrap:
+;Increase bank pointer in $02, $00/01 -> Y
+;Called when Y wraps from #$ffff to #$0000
+
+  BB2A                 inc 02
+  BB2C                 ldy 00
+  BB2E                 bne BB39
+  BB30                 pha
+  BB31                 lda 0A
+  BB33                 bne BB38
+  BB35                 ldy #8000
+  BB38                 pla
+  BB39                 rts
+
+
+;-------------------------------------------------------------------------------
+Opcode4x80-4xff:
+;Opcode #$4x80-#$4xff (%0100xxxx uv.wyyyy)
+;Write 1st interleaved byte with 1-bit constant in v
+
+  BB3A                 sta 03       ;Stash 2nd byte in $03
+  BB3C                 asl a
+  BB3D                 bpl BB61     ;Branch if bit "v" == 0
+
+;Execute if "v" == 1
+  BB3F                 and #20      ;Strip bit "w"
+  BB41                 beq BB53     ;Branch if bit "w" == 0
+
+;Execute if "v" == 1 & "w" == 1
+  BB43                 lda 03       ;Pop 2nd byte
+  BB45                 asl a
+  BB46                 asl a
+  BB47                 asl a
+  BB48                 asl a
+  BB49                 ora #0F
+  BB4B                 sta 0000,x   ;Write to output, pattern #$yf
+  BB4E                 inx
+  BB4F                 lda #1F      ;Return with w=1, y=1
+  BB51                 bra BB9E
+
+;Execute if "v" == 1 & "w" == 0
+  BB53                 lda 03       ;Pop 2nd byte
+  BB55                 and #0f
+  BB57                 ora #f0
+  BB59                 sta 0000,x   ;Write to output, pattern #$fy
+  BB5C                 inx
+  BB5D                 lda #0F      ;Return with w=0, y=1
+  BB5F                 bra BB9E
+
+;Execute if "v" == 0
+  BB61                 and #20      ;Strip bit "w"
+  BB63                 beq BB73     ;Branch if bit "w" == 0
+
+;Execute if "v" == 0 & "w" == 1
+  BB65                 lda 03       ;Pop 2nd byte
+  BB67                 asl a
+  BB68                 asl a
+  BB69                 asl a
+  BB6A                 asl a
+  BB6B                 sta 0000,x   ;Write to output, pattern #$y0
+  BB6E                 inx
+  BB6F                 lda #10      ;Return with w=1, y=0
+  BB71                 bra BB9E
+
+;Execute if "v" == 0 & "w" == 0
+  BB73                 lda 03       ;Pop 2nd byte
+  BB75                 and #0f
+  BB77                 sta 0000,x   ;Write to output, pattern #$0y
+  BB7A                 inx
+  BB7B                 lda #00      ;Return with w=0, y=0
+  BB7D                 bra BB9E
+
+
+;-------------------------------------------------------------------------------
+Opcode40-4F:
+;Opcode #$40-#$4f (%0100xxxx uv.wyyyy) [x/2 bytes])
+;Write x+(1|2) interleaved bytes
+;Different nybble patterns depending on parameters u/v/w
+;u = Get constant nybble from parameter v or y (0 = constant y, 1 = constant v)
+;w = Byte pattern (0 = stream:constant, 1 = constant:stream)
+;If u=1 the first variable nybble is "yyyy"
+;If u=0 the first variable nybble is the most significant bits of next byte
+
+;Examples
+;Data at b7:e321-, written to 7e:2100
+;In   4e 0a 45 40 c0 a0 90 70 50 40
+;Out  a4 a5 a4 a0 ac a0 aa a0 a9 a0 a7 a0 a5 a0 a4 a0
+;
+;Data at b7:cc2d-cc30, written to 7e:28ba
+;In   42 0b 87 53
+;Out  b8 b7 b5 b3
+;
+;Data at b7:ee0b-ee0d, written to 7e:3065
+;In   40 88 05
+;Out  08 00 05
+
+  BB7F                 and #0f
+  BB81                 ina
+  BB82                 sta 05       ;Store parameter "x"+1 in $05 (counter)
+
+  BB84                 lda [00],y   ;Get next byte
+  BB86                 iny
+  BB87                 bne BB8C
+  BB89                 jsr BB2A     ;Y wrap?
+
+  BB8C                 pha
+  BB8D                 lda 09       ;Unwind stream pointer?
+  BB8F                 beq BB99     ;Skip if $09 == #00
+  BB91                 dea          ;Decrease $09 counter
+  BB92                 sta 09
+  BB94                 bne BB99
+  BB96                 jsr BB23     ;If $09 hit zero, UnwindStreamPointer
+  BB99                 pla
+
+  BB9A                 cmp #80
+  BB9C                 bcs BB3A     ;Branch if u == 1 and write 1st byte
+
+  BB9E                 cmp #10
+  BBA0                 bcc BBD6     ;Branch if w == 0
+
+;-------------------------------------------------------------------------------
+;Execute if "w" == 1 (constant:stream pattern)
+
+  BBA2                 and #0f      ;Stash constant low nybble
+  BBA4                 sta 03
+
+  BBA6                 lda [00],y
+  BBA8                 iny
+  BBA9                 bne BBAE
+  BBAB                 jsr BB2A     ;Y wrap?
+
+  BBAE                 sta 04       ;Stash new byte
+  BBB0                 and #f0      ;Isolate 1st nybble
+  BBB2                 ora 03       ;Add constant low nybble
+  BBB4                 sta 0000,x   ;Write first byte
+  BBB7                 inx
+
+  BBB8                 lda 09       ;Unwind stream pointer?
+  BBBA                 beq BBBF
+  BBBC                 jsr BB1E
+
+  BBBF                 dec 05       ;Decrease loop counter
+  BBC1                 bmi BC09     ;Branch if finished
+
+  BBC3                 lda 04       ;Pop byte
+  BBC5                 asl a        ;Isolate 2nd nybble
+  BBC6                 asl a
+  BBC7                 asl a
+  BBC8                 asl a
+  BBC9                 ora 03       ;Add constant low nybble
+  BBCB                 sta 0000,x   ;Write 2nd byte
+  BBCE                 inx
+
+  BBCF                 dec 05       ;Decrease loop counter
+  BBD1                 bpl BBA6     ;Branch to get another byte, or finish
+  BBD3                 jmp BCB7     ;Goto next opcode
+
+;-------------------------------------------------------------------------------
+;Execute if "w" == 0 (stream:constant pattern)
+
+  BBD6                 asl a        ;Stash constant high nybble
+  BBD7                 asl a
+  BBD8                 asl a
+  BBD9                 asl a
+  BBDA                 sta 03
+
+  BBDC                 lda [00],y   ;Get next byte
+  BBDE                 iny
+  BBDF                 bne BBE4
+  BBE1                 jsr BB2A     ;Y wrap?
+
+  BBE4                 sta 04       ;Stash new byte
+  BBE6                 lsr a        ;Isolate 1st nybble
+  BBE7                 lsr a
+  BBE8                 lsr a
+  BBE9                 lsr a
+  BBEA                 ora 03       ;Add constant high nybble
+  BBEC                 sta 0000,x   ;Write 1st byte
+  BBEF                 inx
+
+  BBF0                 lda 09       ;Unwind stream pointer?
+  BBF2                 beq BBF7
+  BBF4                 jsr BB1E
+
+  BBF7                 dec 05       ;Decrease loop counter
+  BBF9                 bmi BC09     ;Branch if finished
+
+  BBFB                 lda 04       ;Pop byte
+  BBFD                 and #0F      ;Isolate 2nd nybble
+  BBFF                 ora 03       ;Add constant high nybble
+  BC01                 sta 0000,x   ;Write 2nd byte
+  BC04                 inx
+
+  BC05                 dec 05       ;Decrease loop counter
+  BC07                 bpl BBDC     ;Branch to get another byte, or finish
+  BC09                 jmp BCB7     ;Goto next opcode
+
+
+;-------------------------------------------------------------------------------
+Opcode40-5F:
+;Opcode #$40-#$5f (%010x....)
+;Further branch into #$40-#$4f and #$50-#$5e routines
+
+  BC0C                 cmp #50
+  BC0E                 bcs BC13     ;Branch if #$50-#$5f
+  BC10                 jmp BB7F     ;Jump if #$40-#$4f
+
+
+;-------------------------------------------------------------------------------
+Opcode50-5F:
+;Opcode #$50-#$5f (%0101xxxx [x+1 bytes])
+;Double byte stream copy
+;Copy x+1 bytes from source stream, write each byte two times
+;  x = #$0-#$f (1-16)
+
+  BC13                 and #0f
+  BC15                 sta 05       ;Store lower 4 bits in $05
+  BC17                 lda [00],y   ;Read next byte (will be written to buffer)
+  BC19                 iny
+  BC1A                 bne BC1F
+  BC1C                 jsr BB2A     ;Y wrap?
+
+  BC1F                 sta 0000,x   ;Write byte two times
+  BC22                 inx
+  BC23                 sta 0000,x
+  BC26                 inx
+
+  BC27                 lda 09       ;Unwind stream pointer?
+  BC29                 beq BC2E
+  BC2B                 jsr BB1E
+
+  BC2E                 dec 05       ;Decrease counter
+  BC30                 bpl BC17
+  BC32                 jmp BCB7     ;Goto next ReadOpcode
+
+
+;-------------------------------------------------------------------------------
+Opcode40-7F:
+;Opcode #$40-#$7f (%010x....)
+;Further branch into #$40-#$5f and #$60-#$7f routines
+
+  BC35                 lsr a        ;Shift back
+  BC36                 cmp #60
+  BC38                 bcc BC0C     ;Branch if #$40-#$5f
+
+
+;-------------------------------------------------------------------------------
+Opcode60-7F:
+;Opcode #$60-#$7f (%011wxxxx yyyyyyyy [x+1 bytes])
+;Write x+2 interleaved words
+;  y = Constant byte
+;  w = Word pattern (0 = constant:stream, 1 = stream:constant)
+
+  BC3A                 xba
+  BC3B                 lda [00],y
+  BC3D                 iny
+  BC3E                 bne BC43
+  BC40                 jsr BB2A     ;Y wrap?
+
+  BC43                 pha
+  BC44                 lda 09       ;Unwind stream pointer?
+  BC46                 beq BC50     ;Skip if $09 == #00
+  BC48                 dea          ;Decrease $09 counter
+  BC49                 sta 09
+  BC4B                 bne BC50
+  BC4D                 jsr BB23     ;If $09 hit zero, UnwindStreamPointer
+  BC50                 pla
+
+  BC51                 sta 03       ;Stash stream byte in $03
+  BC53                 xba          ;Pop back 1st byte
+  BC54                 cmp #70      ;Set carry if >= #70
+  BC56                 and #0f      ;Strip lower 4 bits
+  BC58                 inc          ;+1
+  BC59                 sta 05       ;Store in $05
+  BC5B                 bcs BC7C     ;Branch if opcode #$70-#$7f
+
+;Word pattern [constant:stream]
+  BC5D                 lda 03       ;Pop byte
+  BC5F                 sta 0000,x   ;and write
+  BC62                 inx
+  BC63                 lda [00],y   ;Get next byte
+  BC65                 iny
+  BC66                 bne BC6B
+  BC68                 jsr BB2A     ;Y wrap?
+  BC6B                 sta 0000,x   ;Write it
+  BC6E                 inx
+  BC6F                 lda 09       ;Unwind stream pointer?
+  BC71                 beq BC76
+  BC73                 jsr BB1E
+
+  BC76                 dec 05
+  BC78                 bpl BC5D
+  BC7A                 bra BCB7     ;Goto next opcode
+
+;Word pattern [stream:constant]
+  BC7C                 lda [00],y
+  BC7E                 iny
+  BC7F                 bne BC84
+  BC81                 jsr BB2A     ;Y wrap?
+
+  BC84                 sta 0000,x
+  BC87                 inx
+  BC88                 lda 09       ;Unwind stream pointer?
+  BC8A                 beq BC8F
+  BC8C                 jsr BB1E
+
+  BC8F                 lda 03
+  BC91                 sta 0000,x
+  BC94                 inx
+  BC95                 dec 05
+  BC97                 bpl BC7C
+  BC99                 bra BCB7     ;Goto next opcode
+
+
+;-------------------------------------------------------------------------------
+Opcode00-7F:
+;Opcode #$00-#$7f (%0x......)
+;Further branch into #$00-#$3f and #$40-#$7f routines
+
+  BC9B                 bmi BC35     ;Branch if #$40-#$7f
+
+
+;-------------------------------------------------------------------------------
+Opcode00-3F:
+;Opcode #$00-#$3f (%00xxxxxx [x+1 bytes])
+;Straight stream copy
+;Copy x+1 bytes straight from source stream
+;  x = #$00-#$3f (1-64)
+
+  BC9D                 lsr a        ;Shift back and
+  BC9E                 sta 05       ;store in $05
+
+  BCA0                 lda [00],y   ;Read next byte
+  BCA2                 iny
+  BCA3                 bne BCA8
+  BCA5                 jsr BB2A     ;Y wrap?
+
+  BCA8                 sta 0000,x
+  BCAB                 inx
+  BCAC                 lda 09       ;Unwind stream pointer?
+  BCAE                 beq BCB3
+  BCB0                 jsr BB1E
+
+  BCB3                 dec 05
+  BCB5                 bpl BCA0
+
+
+;-------------------------------------------------------------------------------
+ReadOpcode:
+;Decoder comes back here after each instruction completes
+;A8X16 is assumed
+
+  BCB7                 lda [00],y   ;Read Opcode
+  BCB9                 iny          ;Increase stream pointer
+  BCBA                 bne BCBF
+  BCBC                 jsr BB2A     ;Y wrap?
+
+  BCBF                 pha
+  BCC0                 lda 09       ;Unwind stream pointer?
+  BCC2                 beq BCCC     ;Not rewinded if $09 == 00
+  BCC4                 dea          ;If $09 != 00, decrease by one
+  BCC5                 sta 09
+  BCC7                 bne BCCC
+  BCC9                 jsr BB23     ;If $09 hit zero, UnwindStreamPointer
+  BCCC                 pla
+
+  BCCD                 asl a
+  BCCE                 bcc BC9B     ;Branch if bit 7 = 0 (%0... ....) (<= #$7f)
+  BCD0                 bmi BD07     ;Branch if bit 6 = 1 (%11.. ....) (>= #$c0)
+
+
+;-------------------------------------------------------------------------------
+Opcode80-BF:
+;Opcode #$80-#$bf (%10xxxxyy yyyyyyyy)
+;Sliding window copy (2-byte)
+;Copy x+2 bytes from offset -y in decoded buffer
+;  x = #$0-#$f (2-17)
+;  y = #$000-#$3ff (0-1023)
+
+  BCD2                 lsr a        ;Shift back control byte
+  BCD3                 pha          ;Push lower 6 bits
+  BCD4                 lsr a
+  BCD5                 lsr a
+  BCD6                 ina
+  BCD7                 sta 05       ;Store xxxx+1 in $05
+  BCD9                 pla          ;Pop back original byte
+  BCDA                 and #03      ;Put lower 2 bits in B
+  BCDC                 xba
+
+SlidingWindowCopy:
+  BCDD                 lda [00],y   ;Get parameter (window offset LSB)
+  BCDF                 iny
+  BCE0                 bne BCE5
+  BCE2                 jsr BB2A     ;Y wrap?
+
+  BCE5                 phy          ;Stash source offset
+  BCE6                 rep #20      ;A16
+  BCE8                 sta 03       ;10-bit parameter -> $03/04
+  BCEA                 txa          ;Current output pointer -> A
+  BCEB                 sec
+  BCEC                 sbc 03       ;Subtract with $03/04
+  BCEE                 tay          ;-> Y
+  BCEF                 sep #20
+
+  BCF1                 lda 0000,y   ;Copy bytes
+  BCF4                 sta 0000,x
+  BCF7                 iny
+  BCF8                 inx
+  BCF9                 dec 05
+  BCFB                 bpl BCF1
+
+  BCFD                 ply          ;Pop source offset
+  BCFE                 lda 09       ;Unwind stream pointer?
+  BD00                 beq BCB7
+  BD02                 jsr BB1E
+  BD05                 bra BCB7     ;Goto next Opcode
+
+
+;-------------------------------------------------------------------------------
+OpcodeC0-FF:
+;Opcode #$c0-#$ff (%11x.....)
+;Further branch into #$c0-#$df and #$e0-#$fe routines
+
+  BD07                 ror a        ;Rotate back control byte
+  BD08                 cmp #E0
+  BD0A                 bcs BD31     ;Branch if control byte >= #$e0 (%111. ....)
+
+
+;-------------------------------------------------------------------------------
+OpcodeC0-DF:
+;Opcode 110 / #$c0-#$df / %110xxxxx xyyyyyyy yyyyyyyy
+;Sliding window copy, 3-byte
+;Copy x+2 bytes from offset -y in decoded buffer
+;  x = #$00-#$3f (2-65)
+;  y = #$0000-#$7fff (0-32767)
+
+  BD0C                 and #1f      ;Strip lower 5 bits
+  BD0E                 xba          ;Swap to B
+  BD0F                 lda [00],y   ;Load parameter byte
+  BD11                 iny
+  BD12                 bne BD17
+  BD14                 jsr BB2A     ;Y wrap?
+
+  BD17                 pha
+  BD18                 lda 09       ;Unwind stream pointer?
+  BD1A                 beq BD24
+  BD1C                 dea
+  BD1D                 sta 09
+  BD1F                 bne BD24
+  BD21                 jsr BB23     ;If $09 hit zero, UnwindStreamPointer
+  BD24                 pla
+
+  BD25                 rep #20      ;A16
+  BD27                 asl a
+  BD28                 sep #20      ;A8
+  BD2A                 lsr a
+  BD2B                 xba
+  BD2C                 ina
+  BD2D                 sta 05       ;# of bytes to copy ((A<<1)+1)
+  BD2F                 bra BCDD     ;Jump to SlidingWindowCopy
+
+
+;-------------------------------------------------------------------------------
+OpcodeE0-FE:
+;Opcode #$e0-#$fe (%111x....)
+;Further branch into #$e0-#$ef and #$f0-#$fe routines
+
+  BD31                 cmp #F0
+  BD33                 bcs BD73     ;Branch if control byte >= #$f0
+
+
+;-------------------------------------------------------------------------------
+OpcodeE0-EF:
+;Opcode #$e0-#$ef (%1110xxxx xxxxxxxx yyyyyyyy)
+;Byte RLE (3-byte)
+;Duplicate byte y x+3 times
+;  x = #$000-#$fff (3-4098)
+
+  BD35                 and #0f      ;Strip lower 4 bits
+  BD37                 sta 04       ;Store in $04
+  BD39                 lda [00],y   ;Read parameter byte
+  BD3B                 iny
+  BD3C                 bne BD41
+  BD3E                 jsr BB2A     ;Y wrap?
+
+  BD41                 sta 03       ;Store next byte (yyyyyyyy parameter) in $03
+  BD43                 lda 09       ;Unwind stream pointer?
+  BD45                 beq BD4A
+  BD47                 jsr BB1E
+
+  BD4A                 lda [00],y   ;Read data byte
+  BD4C                 iny
+  BD4D                 bne BD52
+  BD4F                 jsr BB2A     ;Y wrap?
+
+  BD52                 phy          ;Push stream pointer
+  BD53                 pha          ;Push byte:byte
+  BD54                 pha
+  BD55                 rep #20      ;A16
+  BD57                 lda 03       ;Read $03/04
+  BD59                 clc
+  BD5A                 adc #0003    ;+3
+  BD5D                 lsr a        ;>>1 (odd length = set carry)
+  BD5E                 tay          ;Store in y (loop counter)
+  BD5F                 pla          ;Pop byte:byte
+-
+  BD60                 sta 0000,x   ;Copy bytes
+  BD63                 inx
+  BD64                 inx
+  BD65                 dey
+  BD66                 bne BD60
+  BD68                 sep #20      ;A8
+  BD6A                 bcc BD70
+  BD6C                 sta 0000,x   ;One more copy if carry set
+  BD6F                 inx
+  BD70                 ply          ;Pop stream pointer
+  BD71                 bra BCFE
+
+
+;-------------------------------------------------------------------------------
+OpcodeF0-FE:
+;Opcode #$f0-#$fe (%1111x...)
+;Further branch into #$f0-#$f7 and #$f8-#$fe routines
+
+  BD73                 cmp #F8
+  BD75                 bcs BD90     ;Branch if control byte >= #$f8 (%1111 1...)
+
+
+;-------------------------------------------------------------------------------
+OpcodeF0-F7:
+;Opcode #$f0-#$f7 (%11110xxx yyyyyyyy)
+;Byte RLE (2-byte)
+;Duplicate byte y x+3 times
+;  x = #$0-#$7 (3-10)
+
+  BD77                 and #07      ;Strip lower 3 bits
+  BD79                 adc #02
+  BD7B                 sta 05       ;Store counter in $05 (lower 3 bits + #$02)
+
+  BD7D                 lda [00],y   ;Get byte (to be written $05 times)
+  BD7F                 iny
+  BD80                 bne BD85
+  BD82                 jsr BB2A     ;Y wrap?
+
+  BD85                 sta 0000,x   ;Copy bytes
+  BD88                 inx
+  BD89                 dec 05
+  BD8B                 bpl BD85
+  BD8D                 jmp BCFE
+
+
+;-------------------------------------------------------------------------------
+OpcodeF8-FE:
+;Opcode #$f8-#$fe (%11111x..)
+;Further branch into #$f8-#$fb and #$fc-#$fe routines
+
+  BD90                 cmp #FC
+  BD92                 bcs BDE9     ;Branch if control byte >= #$fc
+
+
+;-------------------------------------------------------------------------------
+OpcodeF8-FB:
+;Opcode #$f8-#$fb (%111110xx xxx.yyyy yyyyyyyy)
+;Rewind stream pointer (3-byte)
+;Rewind to -y, do x+3 bytes before returning
+;  x = #$00-#$1f (3-34)
+;  y = #$000-#$fff (0-4095)
+
+  BD94                 and #03      ;Strip lowest 2 bits
+  BD96                 xba          ;Stash in B
+  BD97                 lda [00],y   ;Get 1st parameter byte
+  BD99                 iny
+  BD9A                 bne BD9F
+  BD9C                 jsr BB2A     ;Y wrap?
+
+  BD9F                 rep #20      ;A16
+  BDA1                 asl a
+  BDA2                 asl a
+  BDA3                 asl a
+  BDA4                 sep #20      ;A8
+  BDA6                 lsr a
+  BDA7                 lsr a
+  BDA8                 lsr a
+  BDA9                 xba
+  BDAA                 pha          ;Save "x" parameter for later
+
+  BDAB                 lda [00],y   ;Get 2nd parameter byte
+  BDAD                 iny
+  BDAE                 bne BDB3
+  BDB0                 jsr BB2A     ;Y wrap?
+
+  BDB3                 rep #20      ;A16
+  BDB5                 clc
+  BDB6                 adc #0003    ;Add 3 to offset (instruction length)
+
+;-------------------------------------------------------------------------------
+SetRewindStreamPointer:
+  BDB9                 sty 06       ;Store current stream offset in $06/07
+  BDBB                 sta 03       ;Store 16-bit parameter (rewind offset) in $03/04
+  BDBD                 sep #20      ;A8
+  BDBF                 lda 02       ;Load current stream bank
+  BDC1                 sta 08       ;Store in $08
+  BDC3                 lda 0A
+  BDC5                 rep #20      ;A16
+  BDC7                 beq BDD1     ;Branch if #0000
+
+  BDC9                 tya          ;If $0a+parameter != #0000
+  BDCA                 sec
+  BDCB                 sbc 03       ;Calculate offset
+  BDCD                 bcs BDDD
+  BDCF                 bra BDDB
+
+  BDD1                 tya          ;If $0a+parameter == #0000
+  BDD2                 sec
+  BDD3                 sbc 03       ;Calculate offset
+  BDD5                 bmi BDDD
+
+  BDD7                 clc          ;New offset <= #$8000:
+  BDD8                 adc #8000    ;Add #$8000 and
+  BDDB                 dec 02       ;wrap to previous bank
+
+  BDDD                 tay          ;Set rewinded stream pointer
+
+  BDDE                 sep #20      ;A8
+  BDE0                 pla          ;Pull back "x" parameter
+  BDE1                 clc
+  BDE2                 adc #03      ;Add #3 and store in $09
+  BDE4                 sta 09
+  BDE6                 jmp BCB7     ;Goto next opcode
+
+
+;-------------------------------------------------------------------------------
+OpcodeFC-FE:
+;Opcode #$fc-#$fe (%111111x.)
+;Further branch into #$fc and #$fe routines
+
+  BDE9                 cmp #fe
+  BDEB                 bcs BE0C     ;Branch if control byte >= #$fe (finished)
+
+
+;-------------------------------------------------------------------------------
+OpcodeFC-FD:
+;Opcode #$fc-#$fd (%1111110x xxyyyyyy)
+;Rewind stream pointer (2-byte)
+;Rewind to -y, do x+3 bytes before returning
+;  x = #$0-#$7 (3-10)
+;  y = #$00-#$3f (0-63)
+
+  BDED                 and #01      ;Strip lowest bit
+  BDEF                 xba          ;Store in B
+  BDF0                 lda [00],y   ;Get next byte
+  BDF2                 iny
+  BDF3                 bne BDF8
+  BDF5                 jsr BB2A     ;Y wrap?
+
+  BDF8                 rep #20      ;A16, 9-bit parameter
+  BDFA                 asl a        ;Shift x into B
+  BDFB                 asl a
+  BDFC                 sep #20      ;A8
+  BDFE                 xba          ;Swap into 8-bit A
+  BDFF                 pha          ;Push bytecount parameter
+
+  BE00                 xba
+  BE01                 lsr a
+  BE02                 lsr a
+  BE03                 rep #20      ;A16
+  BE05                 and #003F    ;Strip lower 6 bits
+  BE08                 ina          ;Add 2 to offset (instruction length)
+  BE09                 ina
+  BE0A                 bra BDB9     ;Jump to SetRewindStreamPointer
+
+
+;-------------------------------------------------------------------------------
+OpcodeFE-FF:
+;Opcode #$fe-#$ff (%1111111x)
+;End of data, return from decoder
+
+  BE0C                 plb
+  BE0D                 plp
+  BE0E                 rtl
+

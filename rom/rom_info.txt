@@ -1,0 +1,20 @@
+Release data:
+Title           SUPER FAMICOM WARS
+Developer       Intelligent Systems
+Publisher       Nintendo
+Release date    1998-05-01
+Product ID      SHVC-BFWJ-JPN
+Distribution    Nintendo Power
+
+ROM info:
+Header at       0x7fb0
+Title           SUPER FAMICOM WARS
+Game code       BFWJ
+Maker code      01
+Country         0x00 (Japan)
+Version         1.0
+ROM size        0x0b (2048KB)
+RAM size        0x05 (32KB)
+Map mode        0x00 (LoROM)
+Chipset         0x02 (ROM/RAM/Battery)
+Speed           120ns

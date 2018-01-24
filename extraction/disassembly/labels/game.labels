@@ -1,0 +1,266 @@
+function 85ADE3 85AE5C GAME_update_func
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@
+@@@ main on-map entry points
+
+; Current game/map mode
+; 0 = start of day
+; 1 = normal
+; 2 = move unit
+; 3 = drop unit from transport
+; 4 = hp overlay / quick move
+; 5 = unknown (not used?)
+; 6 = back to map from info window / menu
+; 7 = disband unit
+data 7E0F8B 7E0F8C GAME_MAP_current_mode
+
+function 83C218 83C225 GAME_MAP_update_entrypoint
+
+@ Subs
+
+@ Start of day
+function 83C236 83C285 GAME_MAP_startday_main
+
+
+@ Normal map mode
+function 83C2DC 83C353 GAME_MAP_normal_main
+function 858FCA 85903B GAME_MAP_normal_updatecursor
+
+
+@ Transport drop mode
+function 83C8BF 83C8CC GAME_MAP_drop_main
+
+
+@ HP overlay mode
+function 83C6E8 83C6FA GAME_MAP_hp_main
+function 83C705 83C751 GAME_MAP_hp_init
+function 83C752 83C771 GAME_MAP_hp_update
+function 83C772 83C807 GAME_MAP_hp_exit
+function 858D25 858DB7 GAME_MAP_hp_draw
+
+@ Back to map from window / menu
+function 83C5F0 83C5F4 GAME_MAP_backtomap_main
+
+
+@ Disband unit mode
+function 83C84E 83C8BE GAME_MAP_disband_main
+
+
+@ Called from UX_HP_overlay_init, and other places
+function 83B206 83B21B WIP_prep01
+@ These are similar, but doesn't call as many subroutines
+function 83B21C 83B235 WIP_prep02
+function 83B251 83B25D WIP_prep03
+
+@ ...then these are called
+function 83AEB5 83AEEA WIP_prep01_sub01
+function 83E3CE 83E481 WIP_prep01_sub02
+function 83E482 83E4EF WIP_prep01_sub03
+function 83A43D 83A44B WIP_prep01_sub04
+function 83A45B 83A469 WIP_prep01_sub05
+
+function 83C2C9 83C2DB GAME_MAP_set_mode_hp
+
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ Move unit mode
+
+function 83C400 83C498 GAME_MAP_move_main
+# GAME_MAP_move_main continues here
+function 83C499 83C5A4 GAME_MAP_move_main_cont
+# todo: terrain type something
+function 81B451 81B486 GAME_MAP_move_main_sub1
+function 83A926 83A94A GAME_MAP_move_main_sub2
+function 83C5A5 83C5EF GAME_MAP_move_main_sub3
+function 83BC09 83BC29 GAME_MAP_move_main_sub3_1
+function 83BD89 83BDE1 GAME_MAP_move_main_sub3_2
+label 83BD8A entry
+function 83BDE2 83BE25 GAME_MAP_move_main_sub3_2_1
+
+
+# Clear movement overlay
+function 83C1FB 83C217 GAME_MAP_move_overlay_clear
+# Draw movement overlay
+function 83C12E 83C17F GAME_MAP_move_overlay_draw
+; Load fill tile map value
+line 83C169
+
+@ Update rows/columns when scrolling
+function 83EAA4 83EAED GAME_MAP_move_overlay_update_row_entry
+function 83E65D 83E68F GAME_MAP_move_overlay_update_row
+function 83E6CF 83E714 GAME_MAP_move_overlay_update_row_f1
+function 83E750 83E7A1 GAME_MAP_move_overlay_update_row_f2
+function 83E7A2 83E7AD GAME_MAP_move_overlay_update_row_tile
+function 83E7BA 83E7BA GAME_MAP_move_overlay_update_row_tile_nop
+function 83E7BB 83E7DF GAME_MAP_move_overlay_update_row_tile_plot
+; Load fill tile map value
+line 83E7CB
+function 83E80E 83E869 GAME_MAP_move_overlay_update_row_tile_unknown
+
+function 83EA51 83EAA3 GAME_MAP_move_overlay_update_column_entry
+function 83E56A 83E65C GAME_MAP_move_overlay_update_column
+function 83E690 83E6CE GAME_MAP_move_overlay_update_column_f1
+function 83E715 83E74F GAME_MAP_move_overlay_update_column_f2
+function 83E86A 83E875 GAME_MAP_move_overlay_update_column_tile
+function 83E882 83E882 GAME_MAP_move_overlay_update_column_tile_nop
+function 83E883 83E8A0 GAME_MAP_move_overlay_update_column_tile_plot
+; Load fill tile map value
+line 83E88C
+function 83E8C8 83E91F GAME_MAP_move_overlay_update_column_tile_unknown
+
+function 85907C 85913F GAME_MAP_move_updatecursor
+
+
+@ move unit mode mapping
+
+function 859284 8593DF MAP_todo_01
+function 808B9F 808BD2 MAP_todo_02A
+function 808BD3 808BDB MAP_todo_02B
+function 808BDD 808C0C MAP_todo_02C
+function 83B990 83BAAA MAP_todo_03
+function 859C2D 859CD8 MAP_todo_04
+
+function 83D032 83D0A1 MAP_todo_05
+function 83D10C 83D170 MAP_todo_05_sub01
+function 83D1AD 83D1E0 MAP_todo_05_sub02
+
+function 83D0A2 83D10B MAP_todo_06
+function 83D21D 83D2C1 MAP_todo_07
+function 83D85A 83D8AD MAP_todo_08
+function 83D8EA 83D8EA MAP_todo_09
+function 83D2C2 83D316 MAP_todo_10
+function 83D317 83D354 MAP_todo_11
+function 83D355 83D369 MAP_todo_12
+function 83D36A 83D3C8 MAP_todo_13
+
+function 83BAAB 83BB20 MAP_todo_14
+label 83BAAD entry
+
+function 81A8E2 81A952 MAP_todo_20
+
+
+function 83D900 83D900 MAP_nop_01
+
+@ Map out these RAM locations
+@ $0F44
+@ $0F75
+@ $0FA1
+@ $0FA3
+@ $0FA5
+@ $0FA9
+@ $1023
+
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@
+@@@ fixed in-game update tasks
+
+# Update move unit overlay
+function 83E4F0 83E569 GAME_update_move_overlay
+
+# Add in-game OAM
+function 85859A 8585C5 GAME_oam_add
+
+function 8585DF 8585F2 GAME_oam_add_1
+function 858667 85867A GAME_oam_add_2
+function 8586AB 8586BE GAME_oam_add_3
+function 8586EF 858702 GAME_oam_add_4
+function 858733 858746 GAME_oam_add_5
+# Add on-map unit OAM
+function 858777 85878A GAME_oam_add_6
+function 8587BB 8587F9 GAME_oam_add_7
+function 85886B 858892 GAME_oam_add_8
+function 8588CA 858908 GAME_oam_add_9
+
+# Add on-map OAM for attack cursor (translucent squares under attackable units)
+function 858EFA 858F25 GAME_add_oam_attackable
+function 858F26 858F51 GAME_add_oam_attackable_f1
+function 858F52 858F88 GAME_add_oam_attackable_f2
+
+# Update map screen background scrolling
+function 83EAEE 83EC5F GAME_update_bgoffsets
+
+function 87B6FA 87B731 GAME_maybe_dma_uxbox
+@ move these
+function 87B732 87B757 MENU_maybe_dma_uxbox
+function 87BAAB 87BAF4 UX_likely_dma_uxbox
+
+function 81B0E2 81B139 GAME_update_unit_tileanim
+
+function 81B18E 81B1E0 GAME_update_map_tileanim
+
+# Update in game tile buffer
+function 83EC60 83ECE7 GAME_update_tilebuffer
+
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@
+@@@ in-game table call functions
+
+function 839188 83919D VBL_TC_gamescreen_tcall
+data 7E0F89 7E0F8A VBL_TC_gamescreen_tcall_offset
+
+@    /* MI 83 0000 839192 FC 9E 91    */ jsr.w ($919E,x)
+@          ; Unknown1328 [X=0004]
+@          ; Unknown1333 [X=002A]
+@          ; Unknown1340 [X=0026]
+@          ; Unknown1345 [X=001E]
+@          ; _Unknown1345_83969D [X=0020]
+@          ; Unknown1332 [X=0002]
+@          ; Unknown1346 [X=0032]
+@          ; Unknown1348 [X=000C]
+@          ; _Unknown1348_8398F6 [X=000E]
+@          ; Unknown1604 [X=0034]
+@          ; Unknown1336 [X=000A]
+@          ; Unknown1337 [X=003A]
+@          ; Auto0103 [X=0022]
+@          ; Unknown1714 [X=0010]
+@          ; Auto0106 [X=003C]
+@          ; Auto0107 [X=0024]
+@          ; Auto0108 [X=0012]
+@          ; Auto0109 [X=0014]
+@          ; Auto0111 [X=0016]
+@          ; Auto0113 [X=0030]
+@          ; Unknown1246 [X=001A]
+@          ; Unknown1247 [X=001C]
+@          ; Auto0115 [X=0028]
+@          ; Unknown1592 [X=002C]
+@          ; Unknown1593 [X=002E]
+@          ; Unknown1595 [X=0036]
+@          ; GAME_MAP_update_entrypoint [X=0006]
+@          ; Unknown1646 [X=0008]
+
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@
+@@@ utility functions
+
+; Terrain tile/type lookup
+; $0B + $103a+($0D << 1) -> A
+;
+; Uses table (W) at $103A-$10B9 = 128 entries, which are calculated when entering a map.
+# Terrain tile/type lookup
+function 83A2AD 83A2B9 UTIL_terrain_type_lookup
+
+# Terrain tile/type lookup (identical to UTIL_terrain_type_lookup at 83A2AD)
+function 83A2A0 83A2AC UTIL_terrain_type_lookup_alt
+
+# Initialize terrain tile/type lookup at $103A-$10B9
+function 8392BF 83930B UTIL_init_terrain_type_lookup
+
+; CO ID lookup
+; A -> A according to this table:
+;  0->0, 1->2, 2->4, 3->3, 4->5, 5->6, 6->7, 7->1, ?->0
+# CO lookup, A -> A
+function 8AA3F8 8AA412 UTIL_co_lookup
+
+
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@
+@@@ misc
+
+; Calculate HDMA table for vertical squeeze effect
+; (used in intro when big tank falls over)
+function 85A322 85A538 ANIME_calc_hdma_squeeze

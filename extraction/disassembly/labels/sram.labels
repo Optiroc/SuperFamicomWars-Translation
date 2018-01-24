@@ -1,0 +1,52 @@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@
+@@@ sram
+
+function 85A674 85A6D8 SRAM_initialize
+
+function 87F6AA 87F6B9 SRAM_save_game
+function 87EED9 87EF07 SRAM_save_to_slot
+function 85A5B6 85A5E7 SRAM_save_main
+
+# Serialize general game info (000A, 000C, 000F-0011, 0013-0016, 0018 ...)
+function 85A706 85A755 SRAM_save_game_info
+function 85A7C2 85A812 SRAM_save_unit_info
+# Serialize "ai unit planning" info? (0A6A-1009)
+function 85A86C 85A8BF SRAM_save_mystery_info
+function 85A918 85A936 SRAM_save_player_info
+function 85A956 85A9A7 SRAM_save_building_info
+function 85AA02 85AA1A SRAM_save_campaign_info
+function 85AA34 85AA57 SRAM_save_checksum
+
+
+function 85AAE6 85AB12 SRAM_load_game
+function 85AB21 85AB43 SRAM_load_from_slot
+
+function 85AB44 85ABB4 SRAM_load_game_info
+function 85ABB5 85AC0C SRAM_load_unit_info
+function 85AC0D 85AC63 SRAM_load_mystery_info
+function 85AC64 85AC81 SRAM_load_player_info
+function 85AC82 85AC9E SRAM_load_campaign_info
+
+function 85A9B3 85A9B3 SRAM_load_building_state_jsl
+function 85AC9F 85ACB5 SRAM_load_building_state
+function 86BFB2 86BFC7 SRAM_load_building_state_alt
+
+function 85ACB6 85AD1D SRAM_load_building_state_main
+function 85AD1E 85AD24 SRAM_load_building_state_ng
+
+
+function 85A6D9 85A705 SRAM_increment_save_count
+
+function 8AB705 8AB714 SRAM_get_active_slot
+function 8AB715 8AB721 SRAM_set_active_slot
+
+function 85A5EC 85A665 SRAM_validate
+label 85A660 notgood
+function 85AA58 85AA85 SRAM_validate_checksum
+
+function 87E55E 87E586 SRAM_validate_all
+
+data 85A666 85A66B SRAM_slot_offsets
+data 7E8FD7 7E8FD8 SRAM_current_slot_offset
+

@@ -1,0 +1,737 @@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@
+@@@ init and main runloop
+
+function 008A2E 008AFA VEC_reset
+function 0081b6 0081B9 VEC_nmi
+label 0082AC VEC_irq
+
+; Main entry point
+function 808a44 808B23 MAIN
+label 808A6B clear_loram
+label 808A75 clear_wram_7e
+label 808A96 clear_wram_7f
+label 808AB2 clear_vram
+label 808ADA init_stuff
+; Set initial main/vblank jump vectors
+line 808AE1
+; 80ABDB -> VBL_unknown0 (Never executed, similar to VBL_menu)
+line 808AEB
+; 80AC11 -> MAIN_InitGame
+line 808AF5
+label 808AFD perform_softreset
+label 808B18 runloop_wait
+label 808B1E runloop_jump
+hint 808B23 jmp_is_jsr
+
+function 808928 808A2D MAIN_init_mmio
+function 808b26 808b9e MAIN_init_smp
+
+
+# Main runloop jump vector ($D7-D8)
+data 7E00D7 7E00D8 ZP_MAIN_runloop_jmp
+
+# Set ZP_MAIN_runloop_jmp vector
+function 80BAD4 80BAE3 MAIN_runloop_set_vector
+
+
+@ Functions called from MAIN_runloop_jump vector @ 808B23
+
+# Hard initialization
+function 80AC11 80AC7A MAINRUN_init_hard
+function 80A6C6 80A704 MAINRUN_init_hard_continued
+function 80AB3F 80AB76 MAINRUN_init_hard_tcall
+
+# Soft initialization
+function 80C079 80C096 MAINRUN_init_soft
+function 80C097 80C0E1 MAINRUN_init_soft_impl
+
+# Basic update (boot, menu)
+function 80A9BF 80A9CB MAINRUN_update
+# Basic update (when intro runs, idential to MAINRUN_update)
+function 80C0E2 80C0EE MAINRUN_update_intro
+# Basic engine update (in help/units/etc subscreens, idential to MAINRUN_update)
+function 80AC7B 80AC87 MAINRUN_update_subscreen
+# Basic update, without softreset check (used on map select screen)
+function 80BF30 80BF38 MAINRUN_update_nosoftreset
+
+# Init intro anime
+function 80C00F 80C02C MAINRUN_init_intro
+# Init attract mode
+function 80A431 80A4CF MAINRUN_init_attract
+
+@ Game setup
+# Init initial menu system
+function 80A705 80A70E MAINRUN_init_menu
+# Init game config screen
+function 80A7A9 80A805 MAINRUN_init_gamecfg
+label 80A7B7 alt_entry
+# Init map select screen
+function 80BE89 80BEAA MAINRUN_init_mapselect
+
+# Init main game/map screen
+function 80A333 80A3B7 MAINRUN_init_game
+
+# Update main game/map screen
+function 80A6B9 80A6C5 MAINRUN_update_game
+
+# Back to gamescreen from help/unit/cfg subscreen
+function 80A4D0 80A51C MAINRUN_backto_game
+# Back to gamescreen from battle (goes through funcs b1, b2, normal)
+function 809B27 809B30 MAINRUN_backto_game_b1
+function 809B31 809B3F MAINRUN_backto_game_b2
+
+# Restore game after SRAM load
+function 80A3B8 80A430 MAINRUN_restore_game
+@ (todo, look for restore map from ROM!)
+
+@ Sub screens
+
+# Init battle screen
+function 809D39 809DAA MAINRUN_init_battle
+# Update battle screen
+function 809DAB 809DB7 MAINRUN_update_battle
+
+# Init help screen
+function 80A1FF 80A22D MAINRUN_init_help
+# Init units screen
+function 80A12E 80A163 MAINRUN_init_units
+# Init intel screen
+function 80A164 80A199 MAINRUN_init_intel
+# Init results screen
+function 80A19A 80A1CF MAINRUN_init_results
+# Init CP edit screen
+function 80AA1C 80AA5A MAINRUN_init_cpedit
+
+# "Save game?" screen after results
+function 80A851 80A897 MAINRUN_init_postgame_save
+# Map screen after results
+function 80BEAB 80BECC MAINRUN_init_postgame_map
+
+
+@ Unknown
+function 80A75C 80A7A8 MAINRUN_init_whaat
+function 80A1D0 80A1FE MAINRUN_unknown_07
+function 80BF65 80BF82 MAINRUN_unknown_10
+
+
+@ /* MI 83 0000 83926F 22 AC BF 81 */ jsl.l Unknown1295
+@ /* MI 83 0000 839273 22 B3 A9 85 */ jsl.l Auto0336
+@ /* MI 83 0000 839277 20 BC 93    */ jsr.w Unknown1297
+@ /* MI 83 0000 83927A 22 1D 9D 85 */ jsl.l Unknown1298
+
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@
+@@@ NMI / vblank handler
+
+# NMI handler jump vector ($D3-D4)
+data 7E00D3 7E00D4 ZP_NMI_handler_jmp
+
+# Perform long/short NMI handler ($D9-DA)
+data 7E00D9 7E00DA ZP_NMI_handler_flag
+
+# Incremented after a long NMI handler ($DB-DC)
+data 7E00DB 7E00DC ZP_NMI_tick
+
+# Incremented in short NMI handler, never read? ($DD-DE)
+data 7E00DD 7E00DE ZP_NMI_shtick
+
+@ unknown ($D0-D2)
+@ unknown ($D5-D6)
+
+# NMI handler entry point
+function 8081BD 8082AB NMI_handler
+label 8081D2 full
+hint 808234 jmp_is_jsr
+label 80829C short
+
+
+@ Functions called from NMI runloop jump vector
+
+function 80AA5B 80AA98 NMIRUN_menu
+function 80BE0F 80BE54 NMIRUN_mapselect
+function 80A2D1 80A332 NMIRUN_game
+function 80A288 80A2D0 NMIRUN_help
+function 80ABDB 80AC10 NMIRUN_unknown_0
+function 80A059 80A0CC NMIRUN_unknown_1
+function 80C0EF 80C166 NMIRUN_unknown_2
+
+
+@ Standard functions called from NMIRUN_*
+
+# Update HDMA registers
+function 80B253 80B279 NMI_update_hdma
+function 82C199 82C1D6 NMI_update_hdma_setoffsets
+
+; Commit PPU shadow registers at $7b-$ab to hardware registers
+# Commit PPU shadow registers
+function 8080C3 8081A7 NMI_update_ppu
+
+; Commit OAM and CGRAM buffers to PPU
+; TODO: Investigate CGRAM buffer
+# Commit OAM and CGRAM buffers to PPU
+function 80807C 8080C2 NMI_update_oam_cgram
+
+# Read joypads
+function 808002 80807B NMI_update_joy
+
+# Perform SMP duties
+function 808CCC 808D4D NMI_update_smp
+
+
+@
+@@ NMITASKS
+@
+
+data 7E0309 7E0338 NMITASKS_list
+data 7E0745 7E0746 NMITASKS_unknown_2_switch
+
+# Clear $074C-$079B, $0B0C-$0BFB, $0745, $0DDC, $0DDE. #$808879 -> $0DE0
+function 818008 818035 NMITASKS_init_mem
+
+; Called from NMIRUN handlers
+; Call subroutines in list (of long pointers) at $0309-$0338, iterating downwards
+# Call subroutines in list at $0309-$0338
+function 80ABB5 80ABD8 NMITASKS_iterate
+label 80ABBC loop
+label 80ABCF nullptr
+label 80ABD8 jml_0306
+
+# Clear VBLTASKS list ($0309-$0338)
+function 80ab29 80AB3E NMITASKS_clear
+
+# Set bit 15 of $0745
+function 818036 818040 NMITASK_UTIL_0745_set_b15
+# Clear bit 15 of $0745
+function 818041 81804B NMITASK_UTIL_0745_clear_b15
+# Set bit 14 of $0745
+function 81804C 818056 NMITASK_UTIL_0745_set_b14
+
+function 8181A7 81820A NMITASK_unknown_2
+function 8182F6 818347 NMITASK_unknown_2_1_tcall
+function 81829E 8182F5 NMITASK_unknown_2_2
+function 81837D 8183C4 NMITASK_unknown_2_3
+function 82C0F9 82C12B NMITASK_unknown_3
+function 82C12C 82C177 NMITASK_unknown_3_1
+function 82C178 82C187 NMITASK_unknown_3_1_tcall
+
+function 82E134 82E134 NMITASK_nop
+
+
+# NMI table call jump offset 0
+data 7E0300 7E0301 NMITC_offset_0
+# NMI table call jump offset 1
+data 7E0302 7E0303 NMITC_offset_1
+# NMI table call additional jump offset (ran in NMITC_set_bgoffsets_and_dma at 848064)
+data 7E0304 7E0305 NMITC_offset_2
+
+# NMITC function pointers (long)
+data 80AA9C 80AAE4 NMITC_pointers
+
+; Perform two table calls based on values in $0300 and $0302
+function 80AAE5 80AAFB NMITC_process
+function 80AAFC 80AB28 NMITC_exec
+
+# Word $0302 += #1, Word $0304 = #0
+function 838001 838007 NMITC_inc_w_0302
+function 84803C 848063 NMITC_set_taskptr_84800_and_848021_then_exectask
+
+
+; Update scrolling registers and some parts of VRAM
+;   - Depending on $0304
+;   - When is this invoked?
+;   - Check what part of VRAM is updated!
+function 848064 8480B3 NMITC_set_bgoffsets_and_dma
+
+
+data 7F665A 7F665B NMI_BG1VOFS
+data 7F665C 7F665D NMI_BG2VOFS
+data 7F665E 7F665F NMI_BG3VOFS
+data 7F6660 7F6661 NMI_BG1HOFS
+data 7F6662 7F6663 NMI_BG2HOFS
+data 7F6664 7F6665 NMI_BG3HOFS
+@ TODO: Investigate neighbouring values 7F6668 and 7F6666
+@ /* MI 84 0000 84807A AF 68 66 7F */ lda.l $7F6668                   ; 7F6668
+@ /* MI 84 0000 84807E 8F 91 BD 7E */ sta.l $7EBD91                   ; 7EBD91
+@ /* MI 84 0000 848094 AF 66 66 7F */ lda.l $7F6666                   ; 7F6666
+@ /* MI 84 0000 848098 8F 8E BD 7E */ sta.l $7EBD8E                   ; 7EBD8E
+
+
+# NMI table call invoked at game screen
+function 838008 838017 NMITC_game
+function 83801A 83801E NMITC_game_jsl
+
+# VBL table call invoked at menu screens
+function 868241 868250 NMITC_menu
+
+function 80AA99 80AA99 NMITC_nop_1
+function 838000 838000 NMITC_nop_2
+function 84803B 84803B NMITC_nop_3
+function 8E8101 8E8101 NMITC_nop_4
+function 868213 868213 NMITC_nop_5
+function 86977D 86977D NMITC_nop_6
+function 8B8000 8B8000 NMITC_nop_7
+
+function 8480BA 8480FF Auto0158A
+function 848102 84811D Auto0158B
+function 848120 848120 Auto0158_end
+
+
+# Spinlock main thread until (long) NMI handler is executed
+function 8082EE 8082F6 SYS_wait_nmi_done
+
+
+@ Ingame tick jump table
+
+function 8980BA 8980C8 VTASK_8980BA_INGAME_TICK_exec
+
+function 8980F9 898118 INGAME_TICK_TC_MAYBE_DMA_7F8140_8000_0120
+function 898119 898120 INGAME_TICK_TC_XFER_menu_unit_icons
+function 898121 898128 INGAME_TICK_TC_XFER_menu_borders
+function 898129 898144 INGAME_TICK_TC_LZN_95B700_7F2400
+function 898145 89815D INGAME_TICK_TC_DMA_7F2400_A000_1000
+function 89815E 89816E INGAME_TICK_TC_DMA_7F3400_B000_1000
+function 89816F 89819B INGAME_TICK_TC_unknown_state_update_01
+function 89819C 8981C8 INGAME_TICK_TC_unknown_01
+function 8981C9 8981E1 INGAME_TICK_TC_unknown_02
+function 8981E2 8981ED INGAME_TICK_TC_unknown_03
+function 8981EE 898207 INGAME_TICK_TC_unknown_04
+function 898208 898218 INGAME_TICK_TC_unknown_05
+function 898219 898220 INGAME_TICK_TC_unknown_06
+function 898221 898229 INGAME_TICK_TC_unknown_07
+function 89822A 89825E INGAME_TICK_TC_unknown_08
+function 89825F 898272 INGAME_TICK_TC_unknown_09
+function 898273 89827C INGAME_TICK_TC_unknown_10
+function 89827D 898294 INGAME_TICK_TC_unknown_11
+function 898295 8982B0 INGAME_TICK_TC_unknown_12
+function 8982B1 8982BB INGAME_TICK_TC_unknown_13
+function 8982C0 8982F1 INGAME_TICK_TC_unknown_14
+function 8982F5 898306 INGAME_TICK_TC_unknown_15
+function 898309 898384 INGAME_TICK_TC_unknown_16
+function 898385 8983F1 INGAME_TICK_TC_unknown_17
+
+
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@
+@@@ data transfer / setup
+
+
+@ DATA_INIT functions
+@ Set up a lot of stuff, via dozens of clear/decrunch/dma calls
+
+function 80A70F 80A75B DATA_INIT_menu
+
+# Called before menu graphics is transferred: no obvious side effects if skipped (maybe save-game related?)
+function 8AB81A 8ABA94 DATA_INIT_menu_something
+
+function 80A8B2 80A9BE DATA_INIT_fonts
+function 80A51D 80A6A9 DATA_INIT_game_screen
+
+# Set 7EC2F8-7ED2F6 to A (16-bit) [BG1/2 buffer, borders/bg]
+function 80AE05 80AE18 UTIL_memset_bg_buffer_7EC2F8
+# Set 7ED2F8-7EE2F6 to A (16-bit) [BG3 buffer A, text]
+function 80AE19 80AE2C UTIL_memset_text_buffer_a_7ED2F8
+# Set 7EE2F8-7EF2F6 to A (16-bit) [BG3 buffer B, text]
+function 80AE2D 80AE40 UTIL_memset_text_buffer_b_7EE2F8
+
+
+@ Clear buffers
+function 82E073 82E08C CLEAR_0e8B_to_0F15
+
+# Clear some buffers
+function 8594C6 8595A0 DATA_clear_buffers_1
+
+
+# Copy #$18 bytes: 8A9119+(A<<5) -> $0100, #$1E bytes: 8A91B9+(A<<5) -> $0120
+function 8A90CC 8A9118 DATA_memcpy_8A9119to0100_8A91B9to0120
+
+; Copy #$18 bytes: 8A9119+(A<<5) -> $0100, #$1E bytes: 8A91B9+(A<<5) -> $0120 (8A90CC already saves X, so why?)
+# Copy #$18 bytes: 8A9119+(A<<5) -> $0100, #$1E bytes: 8A91B9+(A<<5) -> $0120
+function 8A90C5 8A90CB DATA_memcpy_8A9119to0100_8A91B9to0120_x
+
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ GETDATA functions
+@ Asset decompression and transfer
+
+; Transfer Nintendo logo
+function 8AB43A 8AB4A2 GETDATA_intrologo
+
+function 8A8DFB 8A8E2A GETDATA_menu_border_tiles
+function 8AB337 8AB362 GETDATA_menu_help_icons
+function 8A8DD2 8A8DFA GETDATA_menu_unit_icons
+function 8AB1B2 8AB219 GETDATA_menu_bg_tiles
+function 8AB2C4 8AB336 GETDATA_menu_bg_map
+function 8A8d9A 8A8DD1 GETDATA_kanji
+
+
+@; dma jump table
+@data 80B2AF 80B2B8 DMA_VRAM_jumptable
+
+function 8996A2 8996E6 DMA_copy_ptrs_7EC279_to_074C
+
+function 809DB8 809F22 GETDATA_battle_01
+function 849B1C 849B80 GETDATA_battle_01_SUB_1_unpak
+function 84A286 84A376 GETDATA_battle_01_SUB_2_unpak
+function 84AFE2 84B043 GETDATA_battle_01_SUB_3_unpak
+function 84B15C 84B1AE GETDATA_battle_01_SUB_3_1_unpak
+function 84B1AF 84B234 GETDATA_battle_01_SUB_3_2_unpak
+function 84B2B2 84B334 GETDATA_battle_01_SUB_3_3_unpak
+function 84B335 84B374 GETDATA_battle_01_SUB_3_4_unpak
+function 848B79 848BA5 GETDATA_battle_01_SUB_4_unpak
+function 848C16 848C75 GETDATA_battle_01_SUB_4_1_unpak
+function 848C76 848CCC GETDATA_battle_01_SUB_4_2_unpak
+function 848BA6 848BF5 GETDATA_battle_01_SUB_4_3_unpak
+function 848B4B 848B78 GETDATA_battle_01_SUB_5_unpak
+function 849DED 849E77 GETDATA_battle_01_SUB_6_unpak
+
+function 8BCEFD 8BD155 GETDATA_misc_01
+function 8BD58C 8BD5E0 GETDATA_misc_02
+function 8BD5E1 8BD64F GETDATA_misc_03
+
+function 898E53 898E5C Auto0702
+function 898E6B 898E95 Auto0702_TC1
+function 898E97 898EAE Auto0702_TC2
+function 898EB0 898EBC Auto0702_TC3
+function 898EBE 898ED8 Auto0702_TC4
+# $0747 -> X
+function 898EEC 898EEF Auto0702_TCx_end
+
+function 898EF0 898EF7 Unknown1415
+function 898EF8 898F05 Unknown1416
+function 898F06 898F0D Unknown1417
+function 898F0E 898F15 Unknown1418
+function 898F16 898F1D Unknown1419
+function 898F1E 898F32 Unknown1420
+function 898F33 898F47 Unknown1421
+function 898F48 898F5C Unknown1422
+function 898F5D 898F71 Unknown1423
+function 898F72 898F87 Unknown1424
+function 898F88 898F9D Unknown1425
+function 898F9E 898FB3 Unknown1426
+
+
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@
+@@@ DMA
+
+data 7E0343 7E0343 DMA_queue_index
+data 7E0345 7E0345 DMA_queue_status
+data 7E0346 7E0478 DMA_queue
+
+@ Queue parameters
+@ 0  B Command (0 = exit, 2 = exec)
+@ 1  L Source address
+@ 4  W Length
+@ 6  B VRAM Increment mode (2115)
+@ 7  W VRAM address (2116/17)
+
+
+; Add DMA job (parameters relative to call site)
+; Queue processing is initiated (but may fail gracefully)
+; Parameters
+;   * + #$00 B  Command (#$00 = exit, #$02 = transfer)
+;   * + #$01 L  Source address
+;   * + #$04 W  Length
+;   * + #$06 B  VRAM Increment mode (VMAIN $2115)
+;   * + #$07 W  Destination (VRAM word offset)
+# Add SYS_DMA job (*+1: cmd B, *+2: src L, *+5: len W, *+6: vmain B, *+7: dest W), immediate processing
+function 80B3EB 80B4B5 DMA_add_inline
+
+; Add DMA job
+; Queue processing is initiated (but may fail gracefully)
+; Parameters
+;   $2F      L  Source address
+;   $0B      W  Length
+;   $0D      W  Destination (VRAM word offset)
+# Add SYS_DMA job ($2F: src, $0B: len, $0D: dest), immediate processing
+function 80B4B6 80B502 DMA_add
+
+; Add DMA job
+; Queue processing is not initiated
+; Parameters
+;   $2F      L  Source address
+;   $0B      W  Length
+;   $0D      W  Destination (VRAM word offset)
+# Add SYS_DMA job ($2F: src, $0B: len, $0D: dest), no immediate processing
+function 80B503 80B54F DMA_add_deferred
+
+# Process DMA queue
+function 80B27A 80B34a DMA_process
+; Lock! Parameter index >= #$0100
+label 80B29B trap_1
+; Lock! Not possible to reach, really?
+label 80B2A8 trap_2
+label 80B2B9 exit
+label 80B2FF exec
+label 80B2AF jumptable
+
+
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@
+@@@ Asset decompression
+
+; Decode LZN stream(s)
+; Parameters
+;   $0448    B Don't process if zero
+;   $0449    * Offset list (source ptr, dest ptr)
+function 80B579 80B5C6 UNPAK_process
+
+; Decode LZN stream
+; Parameters
+;   $2F      L Source pointer
+;   $32      L Destination pointer
+;   $0446    W Current SYS_UNPACK queue offset
+# Decode LZN ($2F: src ptr, $32: dest ptr)
+function 80B5C7 80B607 UNPAK_add
+
+# Clear SYS_UNPACK queue offset
+function 80B569 80B578 UNPAK_clear_queue_offset
+
+; LZN decoder
+; Parameters
+;   $00      L Source pointer
+;   $03      L Destination pointer
+# LZN decoder ($00: source ptr, $03: destination ptr)
+function 80BAF4 80BE0E UNPAK_decode
+label 80bcb7 read_opcode
+label 80be0c end_of_data
+
+
+
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@
+@@@ oam functions
+
+@ data
+
+data 1E20 1E21 OAM_buffer_offset
+data 1E22 1E23 OAM_unknown_var
+
+; OAM_buffer_reset
+; Reset OAM buffer by setting Y-coordinates to #$f0 and reset buffer counter ($1E20)
+# Reset OAM buffer
+function 808320 8083F2 OAM_buffer_reset
+label 80833C range_1C00_1CFF
+label 80835A range_1D00_1DFF
+
+; Clear "OAM-H" area (OAM buffer at 1C00-1E1F)
+function 8083f3 808423 OAM_clear_h
+
+; OAM_buffer_add
+; Add entries to OAM buffer (1C00-1E1F) from definition list
+; Parameters
+;   Y        W OBJ definition list offset
+;   $0B      W Added to x-coordinate
+;   $0D      W Added to y-coordinate
+;   $13      W Added to "tile # / attributes" word
+;   $15      W OR:ed to "tile # / attributes" word
+;
+; The definition list starts with one word specifying the number of definitions,
+; followed by an array of definitions 5 bytes each.
+;
+; OBJ definition:
+; 0  W X-coordinate     (lower 12 bits)
+;      OBJ size         (bit 15)
+; 2  B Y-coordinate
+; 3  W Tile #           (lower 9 bits)
+;      Palette #        (bits 9-11)
+;      Priority         (bit 12-13)
+;      H-flip           (bit 14)
+;      V-flip           (bit 15)
+; Buffer offset counter at $1E20 (reset by OAM_buffer_reset)
+# Add entries to OAM buffer from list at DB+Y
+function 808879 808927 OAM_buffer_add
+
+function 81DABD 81DAE0 OAM_func_1
+function 888000 888115 OAM_func_2
+function 888117 888144 OAM_func_3
+
+
+function 8A83AC 8A83E3 OAM_UX_update_menu_cursor
+
+
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@
+@@@ smp functions
+
+function 80935B 80938A SMP_update
+function 808F70 808FFA SMP_unpak
+function 808d4e 808DDD SMP_IO1
+function 808DDE 808efa SMP_IO2
+
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@
+@@@ standard functions
+
+; Divide (unsigned) $25 (u16) / $27 (u8) -> $25 (u16), remainder in $17 (u16)
+; Not used until map
+# Divide $25 (W) / $27 (B) -> $25 (W), $17 (W)
+function 80B081 80B0A8 LIB_div_u16u8_to_u8u8
+
+; Multiply $1F (u16) * $21 (u16) -> $23 (u32)
+; Not used until map
+# Multiply $1F (u16) * $21 (u16) -> $23 (u32)
+function 80AFE5 80B04C LIB_mul_u16xu16_to_u32
+
+
+# Copy $35 bytes from [$2F] to [$32]
+function 80B8FD 80B928 LIB_memcpy
+
+; Fill memory at [$2F] with A, length in $32
+; Note: If length is an odd value the operation will
+; be performed using 8 bits of the fill value.
+# Fill memory at [$2F] with A, length in $32
+function 80B929 80B953 LIB_memset
+
+# AND memory at [$2F] by A, length in $32
+function 80B954 80B98D LIB_memset_AND
+
+# OR memory at [$2F] by A, length in $32
+function 80B98E 80B9C7 LIB_memset_OR
+
+
+# Subtract uint24
+function 83A608 83A68C LIB_sub24
+
+
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@
+@@@ higher level utility functions
+
+# Init stuff before entering a new screen
+function 80A22E 80A287 LIB_init_buffers
+
+# Enable VBlank NMI
+function 8082D2 8082DF SYS_nmi_enable
+
+# Disable VBlank NMI
+function 8082E0 8082ED SYS_nmi_disable
+
+# Reset timers, IRQ, DMA
+function 80ac88 80ACCE SYS_mmio_init
+
+# Restore DMA initial settings
+function 82c006 82C045 SYS_dma_init
+
+# Restore PPU baseline settings
+function 80ACCF 80AE04 SYS_ppu_init
+
+# Turn on screen
+function 8081A8 8081B5 SYS_ppu_screen_on
+
+; Set PPU parameters (BGxSC, BGxNBA, OBJSEL)
+; Parameters
+;   $0D      W BG1 tile base address (VRAM word addressing)
+;   $0F      W BG2 tile base address (VRAM word addressing)
+;   $11      W BG3 tile base address (VRAM word addressing)
+;   $13      W BG4 tile base address (VRAM word addressing)
+;   $15      W OBJ tile base address (VRAM word addressing)
+;   $17      W BG1 screen address (VRAM word addressing)
+;   $19      W BG2 screen address (VRAM word addressing)
+;   $1B      W BG3 screen address (VRAM word addressing)
+# Set PPU parameters (BGxSC, BGxNBA, OBJSEL)
+function 80AE41 80AEDC SYS_ppu_set
+
+; SYS_are_systems_go
+; If
+;   ZP_INIDISP.7   != 0        (screen on)
+;   ZP_INIDISP.0-3 == F        (full brightness)
+;   $0F6D          == $06C5,x  (task related)
+;   $0F6C          == $06A5,x  (task related)
+; Returns A=0 Z=1
+; Else    A=1 Z=0
+# Z = (systems == GO)
+function 87B40E 87B434 SYS_are_systems_go
+
+# Perform soft reset if START+SELECT+L+R pressed
+function 80B653 80B68D SYS_softreset
+label 80B66A execute
+
+
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@
+@@@ joypad
+
+# Active joypad
+data 7E0F9F 7E0F9F JOY_active_pad
+
+# Get held value of current joypad
+function 8AB5D0 8AB5E3 JOY_get_held
+# Get edge value of current joypad
+function 8AB5E4 8AB5F7 JOY_get_edge
+# Get "autofiring" value of current joypad
+function 8AB5F8 8AB60B JOY_get_auto
+
+
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@
+@@@ pointer arithmetic and misc indirect access
+@@@ (these are mostly specialized and should be sorted elsewhere...)
+
+
+# *Word ($0F65) -> A
+function 87B09C 87B0B4 movw_ptr0F65_to_A
+
+# *Long ($0F65) -> $2F
+function 87B078 87B09B movl_ptr0F65_to_2F
+
+
+# *Byte ($0F28) -> A
+function 82E7B8 82E7D5 movb_ptr0F28_to_A
+
+# *Byte ($0F6C)+#$5 -> A, pointer -> $0F28
+function 87AF6E 87AF76 movb_ptr0F6Ci5_to_A__movptr_0F28
+
+# Long $0F6C -> + #5 -> $0F28
+function 87AF57 87AF6D movl_inc5_0F6C_to_0F28
+
+# Long $2F -> $0F31
+function 82F0A2 82F0B8 movl_2F_to_0F31
+
+
+# Byte #$80 -> (Y+0), Long #$000000 -> (Y+3)
+function 82F12A 82F13C movb_c80_to_ptrYi0__movl_zero_to_ptrYi3
+
+# Word $0B -> (Y+1)
+function 82F16D 82F174 movw_0B_to_ptrYi1
+
+# Byte #$40 -> (DB+Y), Long $0F31 -> (DB+Y+3)
+function 82F13D 82F154 movb_c40_to_ptrDBiY__movl_0F31_to_ptrDBiY3
+
+# Word Y + (DB+Y+1) -> A
+function 82F1C5 82F1CA addw_Y_ptrDBiY1_to_A
+
+# Word $0469 += #$301
+function 80B68E 80B6A2 incw_v0301_0469
+
+# Word #$0 -> A -> $7EBDA7
+function 92E03F 92E046 movw_Z_to_A_to_7EBDA7
+
+# OR $0F44 by #$0080
+function 878035 878041 UTIL_OR_0F44_by_0080
+
+# AND $0F77 by #$7FFF
+function 8589EA 8589F7 UTIL_AND_0F77_by_7FFF
+
+# OR $0F77 by #$8000
+function 8589F8 858A05 UTIL_OR_0F77_by_8000
+
+
+# *Word ($0F51)+#$A -> ((highbyte << 5) + lowbyte) << 1 -> A
+function 87896E 8789A6 movw_nybbleshift51_ptr0F51
+
+
+# Complex pointer biz
+function 87877B 8787B7 UnkPtrBiz_0F51_xxx_to_000B
+

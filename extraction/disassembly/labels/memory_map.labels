@@ -1,0 +1,290 @@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@
+@@@ $00-$FF: ZERO PAGE
+
+
+; $00-0A: Used only by LZN decoder
+# ZP_ptr_00 ($00-02)
+@data 7E0000 7E0000 ZP_ptr_00_L
+@data 7E0001 7E0001 ZP_ptr_00_H
+@data 7E0002 7E0002 ZP_ptr_00_B
+
+# ZP_ptr_03 ($03-05)
+@data 7E0003 7E0003 ZP_ptr_03_L
+@data 7E0004 7E0004 ZP_ptr_03_H
+@data 7E0005 7E0005 ZP_ptr_03_B
+
+# ZP_ptr_03 ($03-05)
+@data 7E0003 7E0003 ZP_ptr_03_L
+@data 7E0004 7E0004 ZP_ptr_03_H
+@data 7E0005 7E0005 ZP_ptr_03_B
+
+@data 7E0006 7E0006 ZP_06
+@data 7E0007 7E0007 ZP_07
+@data 7E0008 7E0008 ZP_08
+@data 7E0009 7E0009 ZP_09
+@data 7E000A 7E000A ZP_0A
+
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@
+@@ $0B-$46
+@@ Pushed to stack when entering "VBL_handler_full"
+@@ Mostly used for parameters and temporaries
+
+@ $0B-15: Temporary variables
+@data 7E000B 7E000B ZP_0B
+@data 7E000C 7E000C ZP_0C
+@data 7E000D 7E000D ZP_0D
+@data 7E000E 7E000E ZP_0E
+@data 7E000F 7E000F ZP_0F
+@data 7E0010 7E0010 ZP_10
+@data 7E0011 7E0011 ZP_11
+@data 7E0012 7E0012 ZP_12
+@data 7E0013 7E0013 ZP_13
+@data 7E0014 7E0014 ZP_14
+@data 7E0015 7E0015 ZP_15
+@data 7E0016 7E0016 ZP_16
+@data 7E0017 7E0017 ZP_17
+@data 7E0018 7E0018 ZP_18
+@data 7E0019 7E0019 ZP_19
+@data 7E001A 7E001A ZP_1A
+@data 7E001B 7E001B ZP_1B
+@data 7E001C 7E001C ZP_1C
+@data 7E001D 7E001D ZP_1D
+@data 7E001E 7E001E ZP_1E
+@data 7E001F 7E001F ZP_1F
+@data 7E0020 7E0020 ZP_20
+@data 7E0021 7E0021 ZP_21
+@data 7E0022 7E0022 ZP_22
+@data 7E0023 7E0023 ZP_23
+@data 7E0024 7E0024 ZP_24
+@data 7E0025 7E0025 ZP_25
+@data 7E0026 7E0026 ZP_26
+@data 7E0027 7E0027 ZP_27
+@data 7E0028 7E0028 ZP_28
+@data 7E0029 7E0029 ZP_29
+@data 7E002A 7E002A ZP_2A
+@data 7E002B 7E002B ZP_2B
+@data 7E002C 7E002C ZP_2C
+@data 7E002D 7E002D ZP_2D
+@data 7E002E 7E002E ZP_2E
+
+# ZP_ptr_2F ($2F-31)
+data 7E002F 7E002F ZP_ptr_2F_L
+data 7E0030 7E0030 ZP_ptr_2F_H
+data 7E0031 7E0031 ZP_ptr_2F_B
+
+# ZP_ptr_32 ($32-34)
+data 7E0032 7E0032 ZP_ptr_32_L
+data 7E0033 7E0033 ZP_ptr_33_H
+data 7E0034 7E0034 ZP_ptr_34_B
+
+@ $35-46: Parameters and temporary variables
+@data 7E0035 7E0035 ZP_35
+@data 7E0036 7E0036 ZP_36
+@data 7E0037 7E0037 ZP_37
+@data 7E0038 7E0038 ZP_38
+@data 7E0039 7E0039 ZP_39
+@data 7E003A 7E003A ZP_3A
+@data 7E003B 7E003B ZP_3B
+@data 7E003C 7E003C ZP_3C
+@data 7E003D 7E003D ZP_3D
+@data 7E003E 7E003E ZP_3E
+@data 7E003F 7E003F ZP_3F
+@data 7E0040 7E0040 ZP_40
+@data 7E0041 7E0041 ZP_41
+@data 7E0042 7E0042 ZP_42
+@data 7E0043 7E0043 ZP_43
+@data 7E0044 7E0044 ZP_44
+@data 7E0045 7E0045 ZP_45
+@data 7E0046 7E0046 ZP_46
+
+
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@
+@@ $47-$FF: Static zero page variables
+
+
+
+
+@
+@@ zero page mmio register shadows $7B - $95
+@
+
+# REG_INIDISP shadow ($7B)
+data 7e007b 7e007b ZP_INIDISP
+# REG_OBJSEL shadow ($7C)
+data 7e007c 7e007c ZP_OBJSEL
+# REG_BGMODE shadow ($7F)
+data 7e007f 7e007f ZP_BGMODE
+# REG_MOSAIC shadow ($80)
+data 7e0080 7e0080 ZP_MOSAIC
+# REG_BG1SC shadow ($81)
+data 7e0081 7e0081 ZP_BG1SC
+# REG_BG2SC shadow ($82)
+data 7e0082 7e0082 ZP_BG2SC
+# REG_BG3SC shadow ($83)
+data 7e0083 7e0083 ZP_BG3SC
+# REG_BG14C shadow ($84)
+data 7e0084 7e0084 ZP_BG1SC
+# REG_BG12NBA shadow ($85)
+data 7e0085 7e0085 ZP_BG12NBA
+# REG_BG34NBA shadow ($86)
+data 7e0086 7e0086 ZP_BG34NBA
+# REG_W12SEL shadow ($88)
+data 7e0088 7e0088 ZP_W12SEL
+# REG_W34SEL shadow ($89)
+data 7e0089 7e0089 ZP_W34SEL
+# REG_WOBJSEL shadow ($9A)
+data 7e009A 7e009A ZP_WOBJSEL
+# REG_WH0 shadow ($9B)
+data 7e009B 7e009B ZP_WH0
+# REG_WH1 shadow ($9C)
+data 7e009C 7e009C ZP_WH1
+# REG_WH2 shadow ($9D)
+data 7e009D 7e009D ZP_WH2
+# REG_WH3 shadow ($9E)
+data 7e009E 7e009E ZP_WH3
+# REG_WBGLOG shadow ($9F)
+data 7e009F 7e009F ZP_WBGLOG
+# REG_WOBJLOG shadow ($A0)
+data 7e00A0 7e00A0 ZP_WOBJLOG
+# REG_TM shadow ($A1)
+data 7e00A1 7e00A1 ZP_TM
+# REG_TS shadow ($A2)
+data 7e00A2 7e00A2 ZP_TS
+# REG_TMW shadow ($A3)
+data 7e00A3 7e00A3 ZP_TMW
+# REG_TSW shadow ($A4)
+data 7e00A4 7e00A4 ZP_TSW
+# REG_CGWSEL shadow ($A5)
+data 7e00A5 7e00A5 ZP_CGWSEL
+# REG_CGADSUB shadow ($A6)
+data 7e00A6 7e00A6 ZP_CGADSUB
+# REG_COLDATA 1 shadow ($A8)
+data 7e00A8 7e00A8 ZP_COLDATA1
+# REG_COLDATA 2 shadow ($A9)
+data 7e00A9 7e00A9 ZP_COLDATA2
+# REG_COLDATA 3 shadow ($AA)
+data 7e00AA 7e00AA ZP_COLDATA3
+# REG_SETINI shadow ($AB)
+data 7e00AB 7e00AB ZP_SETINI
+# REG_BG1HOFS (L) shadow ($8A)
+data 7e008A 7e008A ZP_BG1HOFS_L
+# REG_BG1HOFS (H) shadow ($8B)
+data 7e008B 7e008B ZP_BG1HOFS_H
+# REG_BG1VOFS (L) shadow ($8C)
+data 7e008C 7e008C ZP_BG1VOFS_L
+# REG_BG1VOFS (H) shadow ($8D)
+data 7e008D 7e008D ZP_BG1VOFS_H
+# REG_BG2HOFS (L) shadow ($8E)
+data 7e008E 7e008E ZP_BG2HOFS_L
+# REG_BG2HOFS (H) shadow ($8F)
+data 7e008F 7e008F ZP_BG2HOFS_H
+# REG_BG2VOFS (L) shadow ($90)
+data 7e0090 7e0090 ZP_BG2VOFS_L
+# REG_BG2VOFS (H) shadow ($91)
+data 7e0091 7e0091 ZP_BG2VOFS_H
+# REG_BG3HOFS (L) shadow ($92)
+data 7e0092 7e0092 ZP_BG3HOFS_L
+# REG_BG3HOFS (H) shadow ($93)
+data 7e0093 7e0093 ZP_BG3HOFS_H
+# REG_BG3VOFS (L) shadow ($94)
+data 7e0094 7e0094 ZP_BG3VOFS_L
+# REG_BG3VOFS (H) shadow ($95)
+data 7e0095 7e0095 ZP_BG3VOFS_H
+
+
+
+
+
+# REG_NMITIMEN shadow ($BC)
+data 7e00BC 7e00BC ZP_NMITIMEN
+
+
+
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@
+@@@ LORAM ($0100-$1FFF)
+@@@
+
+# boxdef_struct pointer ($0F51-53)
+data 7E0F51 7E0F51 UX_SYS_boxdef_ptr_L
+data 7E0F52 7E0F52 UX_SYS_boxdef_ptr_H
+data 7E0F53 7E0F53 UX_SYS_boxdef_ptr_B
+
+# boxdim_struct pointer ($0F54-56)
+data 7E0F54 7E0F54 UX_SYS_boxdim_ptr_L
+data 7E0F55 7E0F55 UX_SYS_boxdim_ptr_H
+data 7E0F56 7E0F56 UX_SYS_boxdim_ptr_B
+
+# Word parameter ($0F57-58)
+#data 7E0F57 7E0F58 param_w_0F57
+# Byte parameter ($0F59)
+#data 7E0F59 7E0F59 param_b_0F59
+
+# Word parameter ($0F5D-5E)
+data 7E0F5D 7E0F5E param_w_0F5D
+# Word parameter ($0F5F-60)
+data 7E0F5F 7E0F60 param_w_0F5F
+# Word parameter ($0F61-62)
+#data 7E0F61 7E0F62 param_w_0F61
+# Word parameter ($0F63-64)
+#data 7E0F63 7E0F64 param_w_0F63
+
+
+
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@
+@@@ OAM
+@@@
+
+# OAM buffer
+data 7E1C00 7E1E1F BUFFER_oam
+
+@OAM related vars at 1E20-1E23
+
+
+
+@
+@@ $1E24-$1FFF: Stack
+@  In a pinch we can quite probably use a bit of memory here
+
+
+# Stack
+@data 7E1E24 7E1FFF STACK
+
+
+
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@
+@@@ HIRAM ($7E2000-$7EFFFF, $7F0000-$7FFFFF)
+@@@
+
+
+@ Tile map buffers
+@
+@   BG1 (borders)  7EC2F8-7ED2F7 (WRAM)  E000-EFFF (VRAM)
+@   BG2 (map/bg)   7ED2F8-7EE2F7 (WRAM)  F000-FFFF (VRAM)
+@   BG3 (text)     7EE2F8-7EF2F7 (WRAM)  D000-DFFF (VRAM)
+
+# BG1 buffer (borders)
+data 7EC2F8 7ED2F7 BUFFER_bg1_borders
+# BG2 buffer (map/bg)
+data 7ED2F8 7EE2F7 BUFFER_bg2
+# BG3 buffer B (text)
+data 7EE2F8 7EF2F7 BUFFER_bg3_text
+

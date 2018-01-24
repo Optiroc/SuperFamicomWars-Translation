@@ -1,0 +1,353 @@
+SUPER FAMICOM WARS // English Translation // mb-sfwe-v1.1 (2018.06.30)
+-------------------------------------------------------------------------------
+
+Almost 20 years after its original Japanese release, the immediate ancestor
+to the beloved tactics game Advance Wars is finally playable in English.
+
+Super Famicom Wars was developed by Intelligent Systems, published by Nintendo
+and first released on May 1 1998. The game was available exclusively via the
+Nintendo Power rewritable cartridge system, making it one of the hardest Super
+Famicom titles to obtain. Earlier that spring, several teaser/demo versions
+were broadcast on the Satellaview service, each featuring one map from the
+full game. Super Famicom Wars has also since been released on the Wii and Wii U
+as part of the Virtual Console library - again, exclusively in Japan.
+
+Looking at the publishing schedule across the Wars series, it's almost like
+Nintendo didn't want the franchise to accumulate a global fan base. It's
+predecessor, Famicom Wars for the original Famicom, was also never released
+outside of Japan and that game was released in the console's heyday. With Super
+Famicom Wars coming out so late in its host console's life cycle, it was likely
+never considered for a western release at all. The next game in the series -
+Advance Wars for the Game Boy Advance - was released, this time exclusively for
+western audiences, three years later. Only several years after that was the game
+made available in Japan, and as part of a compilation.
+
+But, despite all this, the Wars games did grow a sizable audience from the two
+GBA titles, which were then followed up with two more games for the Nintendo DS
+in relatively quick succession. The two latter games dropped the light-hearted
+nature to concentrate on a darker storyline and tone. Since then, not much has
+been heard about the series' future from either Nintendo or Intelligent Systems.
+This is a shame, really, since the Wars series' upbeat take on turn-based
+military strategy is uniquely charming and accessible.
+
+So, in a way, releasing this translation makes a new game in the Wars franchise
+available to the English speaking world for the first time in almost ten years.
+And while the series arguably peaked with its Game Boy Advance iterations,
+Super Famicom Wars offers a few novel features and enough flavor to make it
+stand out as a great game in its own right.
+
+
+-------------------------------------------------------------------------------
+PATCH NOTES
+
+The game has been fully translated and made playable wholly in English. If you
+do encounter any bugs or untranslated content, please send a detailed report to
+optiroc at gmail dot com. When mining the ROM, some unreachable content has been
+found, which from the looks it is mostly related to debugging and internal
+playtesting. Some, but not all, of these things have also been translated.
+
+The patch has been tested on Japanese, European and American SNES/SFC
+hardware using the SD2SNES and Super Everdrive flash cartridges. It should
+also work on most emulators, and has been confirmed working via "Canoe" on the
+SNES Classic Mini retro console.
+
+Included with the release are patches in BPS and VCDIFF formats. An IPS format
+patch is not supplied since it doesn't support integrity checking of the base
+file – not ideal with the numerous demo versions available of this game. For
+command line users, use xdelta3 to apply the VCDIFF patch:
+
+# xdelta3 -d -s base.sfc mb-sfwe-v1.0.vcdiff patched.sfc
+
+If you prefer a UI, there are several free programs available for different
+operating systems that support BPS patches, including "Floating IPS (Flips)"
+for Windows and "MultiPatch" for macOS.
+
+Apply the patch to this base ROM image:
+
+Name          Super Famicom Wars (Japan) (NP).sfc
+Size          2097152 bytes
+ROM Checksum  E5EF
+CRC32         D6EACBEA
+MD5           D88B4ED9A9D834696357CE4C9EF95359
+SHA1          24279CA4B598F4CAA0CF4D7FA0A423F9E51BB6F7
+SHA256        3027150B4B9C7D5D991FEDA0BB8CA694245FA025C71EC921AC13071FE4584B8B
+
+The resulting file should have the following checksums:
+
+ROM Checksum  7F3E
+CRC32         167E5F3B
+MD5           67B9BB6C5772D70D721755DE4AD15B18
+SHA1          E3CCEAE92A58367502B905F67ECECB5AE3CBC988
+SHA256        E7C71A05173A4D337ED517BB3F21F1651D00992DD00FDFDA3D520686BBC507D3
+
+
+-------------------------------------------------------------------------------
+TRANSLATION NOTES
+
+The translation is heavily informed by the naming conventions used in the game's
+GBA sequel, so Advance Wars players should feel quite at home here. The most
+significant departures from AW nomenclature are below:
+
+AA Tank    This unit is called A-AIR in Advance Wars, but with this game also
+           featuring an Anti-Air Artillery unit, something more specific was
+           needed to differentiate between the two. AA Tank is the more literal
+           translation and fits the tight on-screen space restrictions nicely.
+Flak Gun   This unit is unique to Super Famicom Wars and would literally be
+           translated as "Anti-Air Artillery". Flak Gun (or "Flak" for short)
+           was chosen based on the overarching goal to find an easily
+           distinguishable, non-abbreviated name for every unit.
+Striker    Another unit exclusive to Super Famicom Wars, known in some old
+           FAQs as Assault Fighter. Looking at real world combat aircraft
+           classifications, more fitting names would be either Attacker or
+           Strike Fighter. Striker was chosen as a short form of Strike
+           Attacker, again for distinctiveness and to avoid abbreviations.
+
+Red Star   This army is called Orange Star in the AW series, since Red Star
+           was deemed too political being a reference to communism in the real
+           world. Using Orange Star was never really a consideration for this
+           translation – its units are red and the UI while playing with the
+           army is red.
+Disband    The Delete command is called Disband here, one of several small
+           touches to keep the language more "in-universe".
+
+Map Names  Most names are pulled from the Advance Wars localization, but
+           there are a few exceptions. Most notably, the first three maps in
+           the Classic campaign have been named to continue the food theme from
+           the original Japanese. So here, we have Bean Island, Donut Island and
+           Onigiri instead of the less thematic Bean Island, Crater Isle and
+           Triangles.
+
+
+-------------------------------------------------------------------------------
+GAMEPLAY NOTES
+
+Super Famicom Wars features a pretty extensive in-game help system which
+is fully localized. We highly recommend any new players to check it out!
+
+A couple of things worth noting for newcomers right off the bat:
+
+- The save system behaves much like a modern game: You can save at any point
+  in the game using the "Save" command in the in-game menu. The save is a
+  snapshot of the current game state down to the last detail, and can be
+  recalled not only after resetting/power cycling the console but also via
+  the in-game "Load" command.
+
+- While thin on exposition, the game's two 2 player modes (Classic Maps
+  and New Maps) offer a campaign-like experience. The goal is to occupy all
+  15 maps, at which point a final "boss map" with pre-deployed units is
+  unlocked. There are two different final maps for each mode, based on the
+  opposing army.
+
+- Although you can call up the Options screen from within the game, most
+  options can only be adjusted when you create a New Game (ie. when starting
+  a new campaign). Only the sound and animation options can be changed
+  after the initial game setup.
+
+
+Some notable differences compared to subsequent Advance Wars titles:
+
+- The "Level Up" gameplay option enables an experience system unique
+  to this game within the series. Highly recommended!
+- You cannot deploy new units at captured bases.
+- Transport Units consume their turn when loaded.
+- Rivers can be traversed by all Naval Units.
+- Helicopters need to land to load or drop units, so those actions can't
+  be performed on Woods and Mountains.
+- The Train is pretty awesome! (Only available in the "New Maps" mode.)
+
+
+-------------------------------------------------------------------------------
+CREDITS
+
+Commander in Chief .............. David 'optiroc' Lindecrantz
+                                      Reverse Engineering
+                                      Programming
+                                      Translation
+                                      Graphics
+                                      Game Specific Tools
+
+Signal Intelligence ....,........ Anders 'breakin' Lindqvist
+                                      Reverse Engineering Tools
+
+Communications Corps ....,....... Lee Hyde
+                                      Main Writer
+                                  Sora Aoki
+                                      Interpreter
+                                  Dylan V
+                                      Fact Checker
+
+Covert Operations ..........,.... Johan 'Spot' Samuelsson
+                                  Dieter von Laser
+                                  bubbla
+                                  Grahf
+                                  ChronoMoogle
+
+
+-------------------------------------------------------------------------------
+FIELD JOURNAL
+
+David's Notes:
+
+Releasing a proper Super Famicom game translation has been on my bucket list
+since I first got acquainted with the phenomenon through the works of Tomato,
+Aeon Genesis, DeJap, J2e et al at the turn of the millennium. And while I
+tinkered with it a bit back then, I never got too far into a project before
+realizing it was too much (and really, too hard) work for me to tackle, and
+more often than not I realized that the work had already been done by someone
+else.
+
+Fast forward to 2012. The arrival of SD2SNES sparked new interest in SNES
+hacking for me, and I realized that for some peculiar reason Super Famicom
+Wars had still not been translated. Being a huge Advance Wars fan I thought
+this had to be rectified, so I spent some weeks in January to February of that
+year reverse engineering parts of the game. Progress went rather well; the
+compression algorithm was easy enough to figure out, and the core text plotting
+routines were also rather straight forward. But when moving to bigger picture
+things – trying to figure out how the game worked on a higher level – I hit a
+brick wall. Full ROM disassembly is rather tricky on the SNES, and browsing
+noisy unannotated trace logs were a slow and tedious process. So I concluded
+that better tools were needed, and the project was put on hold indefinitely.
+
+Come late spring 2017, several other attempts at translating Super Famicom
+Wars had come and gone. I thought that now, with a couple of years of
+expanded experience in general software tinkering, maybe I could pull of a
+proper reverse engineering effort of this game. And by sheer coincidence,
+at a local "demo scene" beer night a fortunate turn of events began to
+unravel! I talked about console hacking with Anders "breakin" Lindqvist, a
+friend who frequents these events and usually have something SNES related
+going on. While neither he or I had too much specific going on – I believe
+I had just tinkered a bit with the SNES Mouse, and he was probably on the
+lookout for a project after putting a hardware hacking project on hold – so
+we talked about old projects that had fizzled out instead. And we realized
+that we had one abandoned project each that might just mesh up perfectly.
+
+Enter "snestistics"! Anders' project started out, at roughly the same time as
+my first attempt at Super Famicom Wars hacking, as a reverse engineering tool
+for Zelda 3. Intrigued by the prospect of using the concepts on a game that
+was pretty much unexplored territory, he quickly tailored the tool for the
+needs we identified with SFW. Soon enough we had a tool that not only produced
+clean annotated disassembly, but also callstacks with function parameters,
+memory usage reports and much more. After a while we knew all about the game
+needed to take full control over the text, UI and DMA systems. I started
+writing some tools to extract data from the game, while Anders continued
+adding some truly mindblowing features to snestistics (which will hopefully
+be applied to some other game soon enough!).
+
+After a very exciting R&D period with not much work done on the actual game,
+it was time to actually implement *all the things*: custom string decoder, text
+renderer and DMA system had to be programmed and patched in, along with several
+small improvements to the original UI code. Not to mention actually translating
+the text and localizing a sizable chunk of graphics.
+
+And here we are: A couple of months later the TODO list is empty and the
+game is fully translated and playable! During this final phase of the project
+I had some great support from a small crowd of beta testers, who not only
+found some obscure (and not so obscure) bugs but also offered great feedback
+on unit naming and the text contents in general. Especially Lee Hyde who stepped
+up and ended up as "Main Writer", carefully rewriting more or less the entirety
+of my initial (pretty rough) translation.
+
+
+Anders' Notes:
+
+"What are you working on now", David asked. I usually answer this question
+by describing my latest personal project that I am working on, projects that
+seldom amounts to anything. Like that time 5 years ago when I wrote a tool
+to reverse engineer 'A Link to the Past' for the Super Nintendo only to find
+out that someone had a already done just that. That time I just pushed my tool
+to github and never touched it again. This time I didn't have a personal
+project so I said that maybe it would be fun to do something with someone for
+once. I asked David to tell me everything relevant on his bucket list and he
+answered "secret project X and an English translation of Super Famicom Wars".
+David had told me about the SFW project before - mostly around 5 years ago when
+he gave it up - and we even speculated if my tools could be used.
+I told David that I'm not touching "secret project X" with a ten-foot pole
+but let's do Super Famicom Wars! And so we did. At this time I had never played
+any games in the Wars series and I had never heard of this game before!
+
+It turned out that my tool from 5 years ago already in its current state was
+almost enough to unblock David. By being able to get a really nice assembler
+source code of the game lessened the cognitive load of reverse engineering.
+When things became hard again I and David came up with new ways to simplify.
+Later a mode where you could list all 'functions' being called and a way
+to custom print function parameters unlocked was added. It was really fun
+using it on a game that hadn't been reverse engineered before; it felt like
+we were unlocking the secrets of the game, things nobody but the original
+developers had seen. That is the benefit of attacking an obscure game!
+
+Then one day David simply understood the game. Reverse engineering was over.
+I had one major feature almost done that would have been awesome but it was
+never needed. In the end my tool was only there to push David over the
+threshold. After this I mostly cheered on, very happy that David persevered
+and that he managed to get other capable people involved with the actual
+translation.
+
+I am continuing work on my tool at https://github.com/breakin/snestistics. It
+is not ready for general consumption just yet but hopefully it can help
+push more reverse engineers over the threshold so that they don't need the tool
+anymore since they now understand the game itself. I am very proud that I was
+part of this project that in the end actually was finished!
+
+
+Lee's Notes:
+
+It's ironic that for the self-styled grammar/literary Nazi on this project, I'm
+the guy who at one point wondered if we should consider renaming the CO who is
+very clearly styled on a certain historical dictator. While deciding not to was
+one of the many right calls that David made for this game, you can still blame
+me if you're a Japanese speaker and notice anything that isn't a direct 1:1
+translation of the original.  That's because a lot of it very much isn't - and
+deliberately so.
+
+We hope, however, that you'll approve of the writing choices we've made. The
+Help section in particular was so sparse in some places and repetitious in
+others that we decided to rebuild it using the Japanese as a starting point.
+With Advance Wars being my favourite game of all time, we tried to stay true to
+the spirit of the series and even managed to add in some extra rules in the game
+which the original developers hadn't mentioned. This means we've gone further
+than just a translation and in this respect have instead actually localised the
+game for an English-speaking audience.
+
+My first project of this kind, it's been a fascinating task to produce text
+which is grammatically correct, fun to read, informative, stays true to the game
+and, as much as anything else, all fits within a limited pixel count! There are
+still a few more alterations I'd put forward for a future release but, for the
+most part, we think that we've absolutely done justice to a wonderful game that
+I only first discovered two months before this release. David's been a fantastic
+Commander-in-Chief to serve under and I'm honoured to have been involved in a
+piece of gaming history in this small way.
+
+
+------------------------------------------------------------------------------
+KNOWN BUGS
+
+- Under certain circumstances when having Quick Battles enabled and Quick Map
+  disabled, the Quick Battle window will exhibit some graphical bugs: The top
+  "Level" icon will be glitched, as well as the jumping "Level Up" text if a
+  unit has the good/bad luck to level up during that battle.
+
+  This is a bug in the original game as well, and I may get around to fix it
+  at some point if I find a way to consistently reproduce it.
+
+
+-------------------------------------------------------------------------------
+VERSION HISTORY & FEEDBACK
+
+v1.1 (2018.06.30) - "20TH ANNIVERSARY WHAT?"
+- Initial source code release.
+- Text renderer: On (extremely) rare occasions the in-game menu will render
+  garbage. I believe it is now fixed, but it's hard to tell since it is so
+  hard to reproduce the bug.
+- Several minor text and graphics tweaks.
+
+v1.0 (2017.12.24) - "HELLO WARS!"
+- Initial public release.
+
+
+If you find any odd bugs or inconsistencies within the game, please send as
+detailed information as possible to optiroc at gmail dot com. If possible,
+provide a save game with instructions on how to get to that bug/issue from
+the point of the save.
+
+
+Thank you for playing!

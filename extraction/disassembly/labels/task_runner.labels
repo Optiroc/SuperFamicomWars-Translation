@@ -1,0 +1,440 @@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@
+@@@ TASK RUNNER
+
+@ The task runner provides a mechanism to register up to 16 tasks which are
+@ run off the main game update loop until removed (either by itself or forcibly).
+
+@ A task is registered by passing a TASK_struct pointer to the TASK_register function.
+@
+@ TASK_struct
+@   0  W Data (?)
+@   2  W Init function offset (ifunc)
+@   4  W Update function offset (ufunc)
+@   6  W Epilogue function offset (efunc)
+@
+@ The task runner will add the task to a free slot, and then immediately run
+@ the init function followed by running the update function once. The update
+@ function will then be run at each TASK_iterate (ie. off the NMI handler, but
+@ is allowed to skip frames) until removed.
+
+@ Tasks are called with the task_id (0-f << 1) in X, and can access temporary
+@ storage indexed by X at 0605, 0625, 0645 and so on:
+
+@ $0525,task_id   TASK_struct[w1] ifunc offset (if non-zero task_id is considered in use)
+@ $0545,task_id   Task bank (derived from TASK_struct location)
+@ $0565,task_id   TASK_struct[w0] apparently useless data
+@ $0585,task_id   Task variable?
+@ $05A5,task_id   TASK_struct[w2] ufunc offset
+@ $05C5,task_id   TASK_struct[w3] efunc offset (copied to $05E5,task_id at 8281A6)
+@ $05E5,task_id   #1 is written on first use (828059)
+@ $0605,task_id   Task variable
+@ $0625,task_id   Task variable
+@ $0645,task_id   Task variable
+@ $0665,task_id   Task variable
+@ $0685,task_id   Task variable
+@ $06A5,task_id   Task variable
+@ $06C5,task_id   Task variable
+@ $06E5,task_id   Task variable
+@ $0705,task_id   Task variable
+@ $0725,task_id   Useless?
+
+@ Total memory used by task runner: $0516 - $0744
+
+
+# TASK_struct pointer ($6D-6F)
+data 7E006D 7E006D TASK_struct_ptr_6D_L
+data 7E006E 7E006E TASK_struct_ptr_6D_H
+data 7E006F 7E006F TASK_struct_ptr_6D_B
+
+@ Investigate task housekeeping vars:
+@ $0516 W  Current task id?
+@ $0518 W  Number of tasks?
+
+# TASK jump vector ($051A)
+data 7E051A 7E051A TASK_jmpvec_051A_L
+data 7E051B 7E051B TASK_jmpvec_051A_H
+data 7E051C 7E051C TASK_jmpvec_051A_B
+
+@ $051D W  Unknown
+@ $051F W  Unknown
+@ $0521 W  Unknown
+@ $0523 W  Unknown
+
+
+@
+@@ Per task data
+@
+
+data 7E0525 7E0544 TASK_list_ifunc
+data 7E0545 7E0564 TASK_list_bank
+data 7E0565 7E0584 TASK_list_unknown_05C5
+data 7E0585 7E05A4 TASK_list_unknown_0585
+data 7E05A5 7E05C4 TASK_list_ufunc_05A5
+data 7E05C5 7E05E4 TASK_list_efunc_05C5
+data 7E05E5 7E0604 TASK_list_unknown_05E5
+data 7E0605 7E0624 TASK_list_var_0605
+data 7E0625 7E0644 TASK_list_var_0625
+data 7E0645 7E0664 TASK_list_var_0645
+data 7E0665 7E0684 TASK_list_var_0665
+data 7E0685 7E06A4 TASK_list_var_0685
+data 7E06A5 7E06C4 TASK_list_var_06A5
+data 7E06C5 7E06E4 TASK_list_var_06C5
+data 7E06E5 7E0704 TASK_list_var_06E5
+data 7E0705 7E0724 TASK_list_var_0705
+data 7E0725 7E0744 TASK_list_unknown_0725
+
+
+; Register task
+; Parameters
+;   $6D      L Task struct pointer
+# Register task
+function 82801C 8280BD TASK_register
+comment 828027 "TASK_StructPtr bank -> DB"
+comment 82802A "Index first task id"
+comment 82807D "Parameters and jmp location for task fetched here"
+; What is the difference compared to 82801C?
+function 8280BE 8280DA TASK_register_alt
+
+function 828143 82816D TASK_iterate
+function 82816E 8281BF TASK_exec_ufunc
+label 828184 done_early
+label 8281A6 done_but_do_something
+label 8281B1 done
+label 8281B2 perform_jump
+
+; Better investigate the relation between the lists at 525, 0585 and 0725...
+function 8281C2 8281D5 TASK_iterate_cleanup
+
+# Init all task related memory ($0516-$0744)
+function 828006 82801B TASKUTIL_init_mem
+
+# Not looked into it, but removes self if some condition
+function 8280DD 8280F6 TASKUTIL_remove_maybe
+
+# Is task at TASK_struct_ptr_6D registered? (result in carry)
+function 828111 828135 TASKUTIL_is_registered
+
+# Remove task from task list
+function 828136 828142 TASKUTIL_remove
+
+# Inc "TASK_list_var_0625" indexed by 0518
+function 8980AF 8980B9 TASKUTIL_inc_0625_i0518
+
+# Copy TASK_list_var_0625/0645 as long to struct_ptr_0F51
+function 87B0E1 87B0EE TASKUTIL_mov_structptr_to_0F51
+
+
+
+@ Functions called at 8281A3 under some circumstances (task epilogues? "efunc")
+function 8281D7 8281E4 TASK_EFUNC_type1
+function 8281EB 8281F2 TASK_EFUNC_type2
+function 828239 82824A TASK_EFUNC_type4
+function 82824B 82824F TASK_EFUNC_type5
+
+function 8281F3 82820B TASK_EFUNC_type3
+label 82820B tablejump
+
+function 809C38 809C70 TASK_EFUNC_type3_TC_01
+function 809C71 809C7E TASK_EFUNC_type3_TC_02
+function 809C7F 809C96 TASK_EFUNC_type3_TC_03
+function 869912 869943 TASK_EFUNC_type3_TC_04
+function 869AED 869AF7 TASK_EFUNC_type3_TC_05
+function 869B1C 869B27 TASK_EFUNC_type3_TC_06
+function 8B8078 8B8088 TASK_EFUNC_type3_TC_07
+function 8B816B 8B817B TASK_EFUNC_type3_TC_08
+function 8B984B 8B9857 TASK_EFUNC_type3_TC_09
+function 8B9858 8B9863 TASK_EFUNC_type3_TC_10
+function 8BB263 8BB279 TASK_EFUNC_type3_TC_11
+function 8BB280 8BB28A TASK_EFUNC_type3_TC_12
+function 8BB28B 8BB29A TASK_EFUNC_type3_TC_13
+function 8E8224 8E8249 TASK_EFUNC_type3_TC_14
+function 8E908A 8E90B8 TASK_EFUNC_type3_TC_15
+function 8E9100 8E9120 TASK_EFUNC_type3_TC_16
+function 8E92AB 8E92B4 TASK_EFUNC_type3_TC_17
+function 8E933A 8E934C TASK_EFUNC_type3_TC_18
+function 8E934D 8E936D TASK_EFUNC_type3_TC_19
+function 8E9531 8E9545 TASK_EFUNC_type3_TC_20
+function 8EA0AC 8EA0BA TASK_EFUNC_type3_TC_21
+function 8EA2B5 8EA2CD TASK_EFUNC_type3_TC_22
+function 91805D 918068 TASK_EFUNC_type3_TC_23
+
+
+
+@
+@@ TASKs annotated as ifunc/ufunc pairs
+@
+
+function 8AB4AB 8AB4B1 IFUNC_bootlogo_wait
+function 8AB4B2 8AB4D2 UFUNC_bootlogo_wait
+
+
+
+@
+@@ IFUNC jump table entries, jumped to from 8280BB
+@
+
+function 81B93F 81B95F IFUNC_81B93F
+function 82829F 8282AC IFUNC_82829F
+function 8282C5 8282D2 IFUNC_8282C5
+function 828349 828369 IFUNC_828349_set_taskptr_8282BD
+function 82839A 8283AD IFUNC_82839A
+function 8283C6 8283D9 IFUNC_8283C6
+function 8283F2 828412 IFUNC_8283F2
+function 828443 82845B IFUNC_828443
+# #$000C -> $7F6656, clear $7F665A-5F + $7F6668-69
+function 84EE88 84EEA2 IFUNC_84EE88
+# #$0012 -> $7F6656, clear $7F665A-5F + $7F6668-69
+function 84EEA3 84EEBD IFUNC_84EEA3
+function 86B68E 86B6E5 IFUNC_86B68E_set_taskptr_86B683
+function 86BE6C 86BE8E IFUNC_86BE6C
+function 87BAF5 87BAFF IFUNC_87BAF5
+function 87BB03 87BB29 IFUNC_87BB03
+function 87C434 87C43F IFUNC_87C434
+function 87C7C7 87C7CB IFUNC_87C7C7
+function 87C7CD 87C7DB IFUNC_87C7CD
+function 87F8E6 87F908 IFUNC_87F8E6
+function 89807D 8980AE IFUNC_89807D
+function 89A237 89A252 IFUNC_89A237
+function 8A9A42 8A9A6E IFUNC_8A9A42
+function 8B92F0 8B92FA IFUNC_8B92F0
+function 8BAC2F 8BAC3A IFUNC_8BAC2F
+function 8E8008 8E801A IFUNC_8E8008
+# #$0032 -> ZP_BG1HOFS
+function 8E9A60 8E9A67 IFUNC_8E9A60_BG1HOFS
+function 918B13 918B3F IFUNC_918B13
+
+
+
+@
+@@ UFUNC jump table entries, jumped to from 8281BF
+@
+
+function 87E629 87E64A UFUNC_firstmenu_secret_code
+
+# Check for secret code at first menu
+# Control code sequence at $92e08b (up, down, left, right, up)
+# Writes number of correct codes to $7ebda7, when ==5 pressing A will jump to SOUND PARK
+function 92E047 92E081 SUB_UFUNC_firstmenu_secret_code
+
+
+function 8B8089 8B816A UFUNC_unitinfo_DATA
+function 8B84AA 8B8520 UFUNC_unitinfo_DATA_sub1
+function 8B8529 8B861E UFUNC_unitinfo_DATA_sub2
+function 8B8663 8B8761 UFUNC_unitinfo_DATA_sub3
+
+function 87D23B 87D2A3 UFUNC_build_unit_menu_init
+function 87D2A4 87D318 UFUNC_build_unit_menu_update
+
+function 8BB522 8BB5ED UFUNC_result_screen_DATA
+
+function 8E9629 8E96E6 UFUNC_MASSIVE_UNPACKING_01
+
+function 8E86BA 8E88B7 UFUNC_UNPAK2VRAM_01
+function 9180A8 9183AB UFUNC_UNPAK2VRAM_02
+function 869965 869AD2 UFUNC_UNPAK2VRAM_03
+function 8B99AA 8B9AED UFUNC_UNPAK2VRAM_04
+function 8BB29B 8BB3DE UFUNC_UNPAK2VRAM_05
+
+function 8B9AF6 8B9B4A SUB_UFUNC_UNPAK_01
+function 8B9B4B 8B9BB9 SUB_UFUNC_UNPAK_02
+function 878A72 878BD1 SUB_UFUNC_COND_UNPAK_01
+
+function 869C6A 869CF5 UFUNC_WRAM2VRAM_01
+function 869CF6 869D8E UFUNC_WRAM2VRAM_02
+function 869D8F 869E1A UFUNC_WRAM2VRAM_03
+function 869E1B 869EB3 UFUNC_WRAM2VRAM_04
+function 87BDA1 87BDC2 UFUNC_WRAM2VRAM_05
+function 89A31B 89A348 UFUNC_WRAM2VRAM_06
+function 918855 918888 UFUNC_WRAM2VRAM_07
+function 8E96E7 8E9717 UFUNC_WRAM2VRAM_08
+function 8E9718 8E979F UFUNC_WRAM2VRAM_09
+
+function 87C010 87C035 UFUNC_ROM2VRAM_01
+function 8A9A6F 8A9A88 UFUNC_ROM2VRAM_02
+
+function 87BDC5 87BDD7 UFUNC_OBJSTUFF_01
+function 87C036 87C048 UFUNC_OBJSTUFF_02
+
+function 8994E7 899523 UFUNC_update_BG1VOFS_and_BG2VOFS_01
+function 8E9469 8E94A3 UFUNC_update_BG1VOFS_and_BG2VOFS_02
+function 89946F 8994A5 UFUNC_update_BG2VOFS
+function 809BFC 809C1C UFUNC_inc_COLDATA
+function 809C97 809CBD UFUNC_clear_IRQ
+function 82845C 82848F UFUNC_82845C_do_MTASK
+
+function 87C56E 87C58F UFUNC_print_co_info
+function 8AA8A2 8AA95C print_co_info
+function 87C590 87C5DD UFUNC_update_co_portrait_anim
+function 8AA668 8AA698 IMPL_update_co_portrait_anim
+
+function 87E6E4 87E7D4 UFUNC_update_saveselect_menu
+
+function 87EE78 87EEC9 UFUNC_update_modeselect_screen_BIG
+function 87F6A5 87F6A9 UFUNC_update_modeselect_screen
+function 87B25F 87B293 IMPL_update_modeselect_screen
+
+function 87B2F4 87B313 IMPL_firstmenus_checkinput_go_back
+
+function 87DDE4 87DEAD UFUNC_update_gamecfg_screen
+function 87E345 87E3BD UFUNC_update_gamecfg_item
+
+function 87BDD8 87BE1B UFUNC_87BDD8_box_draw_alt_01
+function 87C049 87C075 UFUNC_87C049_box_draw_alt_02
+function 87C447 87C464 UFUNC_87C049_box_draw_alt_03
+
+function 87DF1B 87DF75 UFUNC_87DF1B_print_unknown_01
+function 87F77E 87F7CF UFUNC_87DF1B_print_unknown_02
+
+function 87D319 87D35C UFUNC_87D319_wait_NMItick_then_do_stuff
+function 87D423 87D43B UFUNC_87D423_set_taskptr_87BD5D
+function 87D43C 87D47B UFUNC_87D43C_set_taskptr_87BD5D_then_box_draw_alt
+function 87D483 87D4A0 UFUNC_87D483_set_taskptr_87BD5D_then_execmtask
+function 8E958B 8E9628 UFUNC_8E958B_set_taskptr_84EE78_and_84EE80
+
+function 8B9BBA 8B9C00 UFUNC_8B9BBA_CLR_VRAM_then_exectask_8BA460
+function 8B9C01 8B9C5C UFUNC_8B9C01_CLR_VRAM_then_exectask_8BAC27
+
+function 89A253 89A262 UFUNC_89A253
+function 89A263 89A2EF Perform_UFUNC_89A253
+
+function 81B960 81B9B0 UFUNC_81B960
+function 8282AD 8282BA UFUNC_8282AD
+function 8282D3 8282E0 UFUNC_8282D3
+function 82836A 82838F UFUNC_82836A
+function 8283AE 8283BB UFUNC_8283AE
+function 8283DA 8283E7 UFUNC_8283DA
+function 828413 828438 UFUNC_828413
+function 84800B 848020 UFUNC_84800B
+function 84802C 84803A UFUNC_84802C
+function 84EEC0 84EF0C UFUNC_84EEC0
+function 84EF27 84EF73 UFUNC_84EF27
+function 84F2E2 84F301 UFUNC_84F2E2
+function 84F302 84F315 UFUNC_84F302
+function 869790 8697A8 UFUNC_869790
+function 8697AF 8697CD UFUNC_8697AF
+function 869B28 869BBF UFUNC_869B28
+function 869BC0 869BCE UFUNC_869BC0
+function 869BCF 869BD9 UFUNC_869BCF
+function 869BDA 869BE8 UFUNC_869BDA
+function 869BE9 869BF3 UFUNC_869BE9
+function 869F64 869F7A UFUNC_869F64
+function 869F7B 869F95 UFUNC_869F7B
+function 869F96 869FA8 UFUNC_869F96
+function 869FA9 869FB7 UFUNC_869FA9
+function 869FB8 869FCA UFUNC_869FB8
+function 869FCB 869FDB UFUNC_869FCB
+function 86B6E6 86B702 UFUNC_86B6E6
+function 86BE8F 86BEBB UFUNC_86BE8F
+function 87BC47 87BC8B UFUNC_87BC47
+function 87BE1C 87BE45 UFUNC_87BE1C
+function 87C076 87C0E1 UFUNC_87C076
+function 87C465 87C48E UFUNC_87C465
+function 87C552 87C56D UFUNC_87C552
+function 87C701 87C726 UFUNC_87C701
+function 87CADC 87CAE9 UFUNC_87CADC
+function 87D35D 87D391 UFUNC_87D35D
+function 87D3BC 87D3C6 UFUNC_87D3BC
+function 87D47C 87D482 UFUNC_87D47C
+function 87F99F 87F9BA UFUNC_87F99F
+function 89939C 8993C8 UFUNC_89939C
+function 899462 89946E UFUNC_899462
+# Write 94E7 to $05A5,x
+function 8994E0 8994E6 UFUNC_8994E0
+; Got some extra branch code at 89A349-89A34E
+function 89A2F0 89A31A UFUNC_89A2F0
+; Belongs to UFUNC_89A2F0
+function 89A349 89A34E UFUNC_89A2F0_extra
+function 8A9A8B 8A9ACA UFUNC_8A9A8B
+function 8A9ACB 8A9B11 UFUNC_8A9ACB
+function 8A9B12 8A9B6D UFUNC_8A9B12
+function 8A9B6E 8A9BB1 UFUNC_8A9B6E
+function 8B8002 8B8020 UFUNC_8B8002
+function 8B8021 8B803F UFUNC_8B8021
+function 8B8B69 8B8B81 UFUNC_8B8B69
+function 8B8DFF 8B8E24 UFUNC_8B8DFF
+function 8B8E25 8B8E32 UFUNC_8B8E25
+function 8B8E33 8B8E3D UFUNC_8B8E33
+function 8B90C5 8B9186 UFUNC_8B90C5_oam_related
+function 8B9305 8B9361 UFUNC_8B9305
+function 8B9864 8B98A4 UFUNC_8B9864
+function 8BA469 8BA470 UFUNC_8BA469
+function 8BAC3B 8BAC42 UFUNC_8BAC3B
+function 8BB407 8BB447 UFUNC_8BB407
+function 8BB448 8BB488 UFUNC_8BB448
+function 8BB489 8BB521 UFUNC_8BB489
+function 8BB9EA 8BBA2A UFUNC_8BB9EA
+function 8E801C 8E8035 UFUNC_8E801C
+function 8E803B 8E8054 UFUNC_8E803B
+function 8E805A 8E807C UFUNC_8E805A
+function 8E8082 8E80A4 UFUNC_8E8082
+function 8E81CB 8E81EF UFUNC_8E81CB
+function 8E8284 8E829A UFUNC_8E8284
+function 8E82FA 8E830E UFUNC_8E82FA_oam_related
+function 8E88D8 8E88E4 UFUNC_8E88D8
+function 8E88E6 8E88F1 UFUNC_8E88E6
+function 8E88FA 8E88FD UFUNC_8E88D8_end
+function 8E88F3 8E88F9 UFUNC_8E88F3
+function 8E929B 8E92A6 UFUNC_8E929B
+function 8E936E 8E937E UFUNC_8E936E
+function 8E9380 8E9383 UFUNC_8E9380
+function 8E9384 8E9411 UFUNC_8E9380_end
+function 918000 918000 UFUNC_918000_redirect_to_UFUNC_8B8002
+function 918004 918004 UFUNC_918004_redirect_to_UFUNC_8B8021
+function 918033 91803D UFUNC_918033
+function 918069 91807F UFUNC_918069
+function 918080 91809A UFUNC_918080
+function 91809B 9180A7 UFUNC_91809B_set_MAIN_runloop_A4D0
+function 91872B 918788 UFUNC_91872B
+function 918AB6 918AC7 UFUNC_918AB6_oam_related
+function 918B40 918B9D UFUNC_918B40
+function 8EA0C6 8EA0D7 UFUNC_8EA0C6
+function 8E9A68 8E9AA3 UFUNC_8E9A68
+function 8E97EC 8E9825 UFUNC_8E97EC
+function 8E9551 8E956E UFUNC_8E9551
+function 8E94CA 8E94DD UFUNC_8E94CA
+function 8E94DF 8E94E2 UFUNC_8E94DF
+function 8E94E3 8E94FF UFUNC_8E94DF_end
+function 8E945C 8E9468 UFUNC_8E945C
+
+
+@
+@@ TASK NOPs
+@
+
+function 809BD7 809BD7 NOPFUNC_809BD7
+function 84800A 84800A NOPFUNC_84800A
+function 84802B 84802B NOPFUNC_84802B
+function 84F2DF 84F2DF NOPFUNC_84F2DF
+function 86978E 86978E NOPFUNC_86978E
+function 89939B 89939B NOPFUNC_89939B
+function 89945F 89945F NOPFUNC_89945F
+function 8994DD 8994DD NOPFUNC_8994DD
+function 8B97E4 8B97E4 NOPFUNC_8B97E4
+function 8BA468 8BA468 NOPFUNC_8BA468
+function 8BB1CA 8BB1CA NOPFUNC_8BB1CA
+function 8E9261 8E9261 NOPFUNC_8E9261
+function 8E954E 8E954E NOPFUNC_8E954E
+function 8E97EB 8E97EB NOPFUNC_8E97EB
+function 8EA0C3 8EA0C3 NOPFUNC_8EA0C3
+function 918AB3 918AB3 NOPFUNC_918AB3
+
+function 809BCE 809BCE NOPFUNC_809BCE
+function 809BD8 809BD8 NOPFUNC_809BD8
+function 86978F 86978F NOPFUNC_86978F
+function 8697A9 8697A9 NOPFUNC_8697A9
+function 86B68B 86B68B NOPFUNC_86B68B
+function 8E801B 8E801B NOPFUNC_8E801A
+function 8E811A 8E811A NOPFUNC_8E811A
+function 8E9262 8E9262 NOPFUNC_8E9262
+function 918010 918010 NOPFUNC_918010
+
+function 8B8048 8B8048 NOPFUNC_8B8048
+function 8B90B5 8B90B5 NOPFUNC_8B90B5
+function 8B92EF 8B92EF NOPFUNC_8B92EF
+function 8B97E3 8B97E3 NOPFUNC_8B97E3
+function 8BB1C9 8BB1C9 NOPFUNC_8BB1C9
+
+function 8B8049 8B804D MTASK_case_8B8049_clear_xh_yh
+function 8B90B6 8B90BA MTASK_case_8B90B6_clear_xh_yh
+function 8BB9E5 8BB9E9 MTASK_case_8BB9E5_clear_xh_yh

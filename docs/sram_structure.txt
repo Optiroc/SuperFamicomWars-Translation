@@ -1,0 +1,206 @@
+SUPER FAMICOM WARS // english translation
+SRAM serialization structure
+
+------------------------------------------------------------------------------
+Overall structure
+
+Offset  Size    Description
+0000    8       Magic word (53465720 610a1720 = "SFW a** ")
+0008    1       Non-zero if any campaign completed (allows access to Sound Park)
+0009    1       Last accessed slot
+000A    6       Unused
+0010    11E2    Slot 1
+11F2    11E2    Slot 2
+23D4    11E2    Slot 3
+
+
+------------------------------------------------------------------------------
+Slot struct
+
+Offset  Size    Description
+0000    2       Zero if no save, otherwise if != 200A bail out
+0002    2       Unused
+0004    2       Save counter, incremented by 1 for each save
+0006    2       Save state checksum (001A-101D is summed and compared with this value when validating save, at 85aa76)
+0008    2       Unused
+000A    6       Unknown: F82A 0000 FF00
+000F    1       Mode (Classic=00, New=01, 4P=03)
+
+0010    1       Map
+0011    2       Day
+0013    1       Map in progress (No=00, otherwise current player index)
+0014    1       Cursor coordinate X
+0015    1       Cursor coordinate Y
+0016    4       Unknown
+
+001A    A50     Unit Info, 4 * 60 * 11 bytes
+  001A  294       Red Star UnitInfo[], 60 * 11 bytes
+  02AE  294       Blue Moon UnitInfo[], 60 * 11 bytes
+  0542  294       Green Earth UnitInfo[], 60 * 11 bytes
+  07D6  294       Yellow Comet UnitInfo[], 60 * 11 bytes
+
+0A6A    5A0     Unit Planning (guesswork at this point, serialized at 85a86c)
+  0A6A  168       Red Star UnitPlan[], 60 * 6 bytes
+  0BD2  168       Blue Moon UnitPlan[], 60 * 6 bytes
+  0D3A  168       Green Earth UnitPlan[], 60 * 6 bytes
+  0EA2  168       Yellow Comet UnitPlan[], 60 * 6 bytes
+                  This is probably AI related, since it's always zeroes for player controlled armies.
+                  6 bytes per active unit. Some sort of "course of action" data?
+                  WRAM data at 7e9b76
+
+100A    15C     Player Info, 4 * 0x57 bytes
+  100A  57        Red Star PlayerInfo
+  1061  57        Blue Moon PlayerInfo
+  10B8  57        Green Earth PlayerInfo
+  110F  57        Yellow Comet PlayerInfo
+
+1166    40      Building status (serialized at 85a5dc)
+                  One nybble per building:
+                  0 = Unoccupied
+                  1 = Neutral lab
+                  2 = Red Star
+                  4 = Blue Moon
+                  6 = Green Earth
+                  8 = Yellow Comet
+
+117D    29      ?
+
+11A6    3B      Maps cleared status, 19 * 3 bytes
+                  0  1  Army won (0=none)
+                  1  2  Days
+
+
+------------------------------------------------------------------------------
+UnitInfo struct
+Fixed array of 60 UnitInfo structs
+
+Offset  Size    Description
+00      1       Unit type / done+loaded status (bit 0-6: type, bit 7: 0=done, bit 6: loaded)
+01      1       X-coordinate
+02      1       Y-coordinate
+03      1       Fuel
+04      1       HP (0x64 = 100, displayed as two digits, rounded up)
+05      2       Exp: 1000 points per level, 0x0FA1 (4001) = Level 4
+07      1       Ammo
+08      1       Cargo bay 1?
+09      1       Cargo bay 2?
+0A      1       Capture points
+
+Examples:
+Infantry        82 02 07 63 64 00 00 00 00 00 00
+Mech            84 01 08 46 64 00 00 03 00 00 00
+Lt Tank         8a 01 06 46 64 00 00 0c 00 00 00
+                Ut Xc Yc Fl HP  ?  ? Am ?  ?  Cp
+
+Rockets         96 05 0b 32 64 e903 06 00 00 00
+Hv Tank         86 03 0a 32 64 e903 08 00 00 00
+Hv Tank         86 03 0b 32 64 e903 08 00 00 00
+Rockets         96 04 0c 32 64 e903 06 00 00 00
+                            HP Exp
+
+Loaded inf      c2 05 0b 30 64 a10f 06 00 00 00
+APC             8e 05 0b 46 64 a10f 00 81 00 00
+                                       ^load related
+After drop:
+Inf             82 06 0b 30 64 a10f 06 00 00 00
+APC             8e 05 0b 46 64 a10f 00 00 00 00
+
+Unit IDs:
+02  Infantry
+04  Mech
+06  Heavy Tank
+08  Medium Tank
+0A  Light Tank
+0C  Recon
+0E  APC
+10  Proto Tank
+12  Supply Truck
+14  Artillery
+16  Rockets
+18  Train
+1A  AA Gun
+1C  Vulcan
+1E  Missile
+20  Fighter
+22  Bomber
+24  Striker
+26  B-Copter
+28  T-Copter
+2A  Battleship
+2C  Cruiser
+2E  Loader
+30  Sub
+
+
+------------------------------------------------------------------------------
+PlayerInfo struct
+
+Red Star:     100A / 70101A / 7E716E
+Blue Moon:    1061 / 701071 / 7E71C5
+Green Earth:  10B8 / 7010C8 / 7E721C
+Yellow Comet: 110F / 70111F / 7E7273
+
+Offset  Size    Description
+00      4       ?
+04      1       Active units
+05      1       Captured bases
+06      1       Captured cities
+07      1       Captured airports
+08      1       Captured ports
+09      1       Captured depots
+0A      1       ?
+0B      3       Gold
+0E      1       Unused
+0F      3       Income
+12      1       Unused
+
+13      ?
+
+48      1       Game options (Only Red Star's data relevant, although bit 0-1 is set for all armies)
+                  Bit 0 = Quick Map OFF
+                  Bit 1 = Quick Battle OFF
+                  Bit 2 = Domination
+                  Bit 3 = Level Up
+                  Bit 4 = Auto Supply
+                  Bit 5 = Fog of War OFF
+49      1       ?
+4A      1       ?
+4B      1       CO
+4C      1       Theme song
+
+4D      ?       ?
+
+
+------------------------------------------------------------------------------
+Notes
+
+
+Decide if "Load" option should be shown in game:
+8ab705
+85a5f8
+
+
+Copy state from WRAM->SRAM:
+
+7e8fd7 = save slot index
+
+87f6aa jsl $8ab705    ; Validate active slot
+87f6ae jsl $87eed9
+87f6b2 lda #$0001
+87f6b5 sta $000f6f
+87f6b9 rtl
+
+85a5c2 lda $0b         ; Get slot offset
+85a5c4 asl a
+85a5c5 tax
+85a5c6 lda $85a666,x
+85a5ca sta $8fd7
+
+85a5cd jsr $a6d9       ; Increment save count (0004)
+85a5d0 jsr $a706       ; Write general data (000A, 000C, 000F-0011, 0013-0016, 0018 ...)
+85a5d3 jsr $a7c2       ; Write unit info (0x - verify this!)
+85a5d6 jsr $a86c       ; Write AI unit planning (or something!)
+85a5d9 jsr $a918       ; Write player status (100A-1165, from WRAM 7E716E-7E72C9)
+85a5dc jsr $a956       ; Write building status (1166-1173, 0x?? bytes from ?)
+85a5df jsr $aa02       ; Write cleared maps status (11A6-11E1, 0x3B bytes from WRAM 7E8F25-7E8F60)
+85a5e2 jsr $aa34       ; Write checksum
