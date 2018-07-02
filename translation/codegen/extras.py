@@ -38,12 +38,10 @@ cg.insert(at=0x8ACBF2, d={"b":0xb0})
 #-----------------------------------------------------------------------------
 # Secret stuff
 
-# Enable "CO" debug menu (cli -> sec)
+# Enable "CP" debug menu (cli -> sec)
 # - Currently a black screen, need to patch some number/char printing functions
 #   for it to work in conjunction with patched text rendering system...
-# TODO:
-# - Regenerate source with CP menu excercised! Code around 869033
-cg.insert(at=0x87C9DA, d={"b":0x38})
+#cg.insert(at=0x87C9DA, d={"b":0x38})
 
 # Enable SOUND PARK secret code without appropriate SRAM condition
 # (up, down, left, right, up, a)
