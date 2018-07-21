@@ -1,4 +1,4 @@
-SUPER FAMICOM WARS // English Translation // mb-sfwe-v1.1 (2018.06.30)
+SUPER FAMICOM WARS // English Translation // mb-sfwe-v1.1 (2018.07.21)
 -------------------------------------------------------------------------------
 
 Almost 20 years after its original Japanese release, the immediate ancestor
@@ -74,12 +74,11 @@ SHA256        3027150B4B9C7D5D991FEDA0BB8CA694245FA025C71EC921AC13071FE4584B8B
 
 The resulting file should have the following checksums:
 
-ROM Checksum  7F3E
-CRC32         167E5F3B
-MD5           67B9BB6C5772D70D721755DE4AD15B18
-SHA1          E3CCEAE92A58367502B905F67ECECB5AE3CBC988
-SHA256        E7C71A05173A4D337ED517BB3F21F1651D00992DD00FDFDA3D520686BBC507D3
-
+ROM Checksum  7F1E
+CRC32         45CBDF8D
+MD5           96501E0E8D2F7435AC6AC5727571F8BB
+SHA1          E8309511F7BB903059DE7E166C2D08CD971792E5
+SHA256        84E9F52266D36DEE9FAB12211DED5D0AD6DB59D98B652A5EB1E5BD9933AEF0C3
 
 -------------------------------------------------------------------------------
 TRANSLATION NOTES
@@ -333,8 +332,9 @@ KNOWN BUGS
 -------------------------------------------------------------------------------
 VERSION HISTORY & FEEDBACK
 
-v1.1 (2018.06.30) - "20TH ANNIVERSARY WHAT?"
-- Initial source code release.
+v1.1 (2018.07.21) - "20TH ANNIVERSARY WHAT?"
+- Initial source code release, available here:
+    https://gitlab.com/optiroc/SuperFamicomWars-Translation
 - Text renderer: On (extremely) rare occasions the in-game menu will render
   garbage. I believe it is now fixed, but it's hard to tell since it is so
   hard to reproduce the bug.
